@@ -1,3 +1,5 @@
+#![deny(missing_docs)]
+
 use std::path::PathBuf;
 
 use clap::{Args, Parser, Subcommand};
@@ -14,6 +16,7 @@ pub struct Cli {
     op: Option<Op>,
 }
 
+/// Operations on twodos
 #[derive(Subcommand, Debug)]
 pub enum Op {
     /// List all twodo
@@ -32,6 +35,7 @@ pub enum Op {
     Delete,
 }
 
+/// List arguments for twodo
 #[derive(Args, Debug)]
 pub struct ListArg {
     /// Output format
@@ -43,13 +47,14 @@ pub struct ListArg {
     number: Option<usize>,
 }
 
+/// Add arguments for twodo
 #[derive(Args, Debug)]
 pub struct AddArg {
     /// Title of twodo
     title: String,
 
     /// Description for twodo
-    #[arg(short, long, requires="title")]
+    #[arg(short, long, requires = "title")]
     description: Option<String>,
 }
 
