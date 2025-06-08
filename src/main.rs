@@ -1,3 +1,5 @@
+use twodo::run;
+
 fn main() {
-    println!("Hello, world!");
+    run();
 }
