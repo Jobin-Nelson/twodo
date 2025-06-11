@@ -1,5 +1,8 @@
+use twodo::Result;
 use twodo::run;
 
-fn main() {
-    run();
+#[tokio::main]
+async fn main() -> Result<()> {
+    run().await?;
+    Ok(())
 }

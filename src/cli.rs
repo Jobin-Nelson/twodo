@@ -10,10 +10,11 @@ use clap::{Args, Parser, Subcommand};
 pub struct Cli {
     /// Config file to use
     #[arg(short, long, value_name = "FILE")]
-    config: Option<PathBuf>,
+    pub config: Option<PathBuf>,
 
+    /// Operation for twodo
     #[command(subcommand)]
-    op: Option<Op>,
+    pub op: Option<Op>,
 }
 
 /// Operations on twodos
@@ -36,7 +37,7 @@ pub enum Op {
 }
 
 /// List arguments for twodo
-#[derive(Args, Debug)]
+#[derive(Debug, Default, Args)]
 pub struct ListArg {
     /// Output format
     #[arg(short, long)]
@@ -51,11 +52,11 @@ pub struct ListArg {
 #[derive(Args, Debug)]
 pub struct AddArg {
     /// Title of twodo
-    title: String,
+    pub title: String,
 
     /// Description for twodo
     #[arg(short, long, requires = "title")]
-    description: Option<String>,
+    pub description: Option<String>,
 }
 
 // region:    --- Tests

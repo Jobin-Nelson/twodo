@@ -1,8 +1,14 @@
+use crate::controller::delegate;
 use crate::Cli;
+use crate::Result;
 use clap::Parser;
+use sqlx::SqlitePool;
 
-pub fn run() {
+pub async fn run() -> Result<()> {
     let cli = Cli::parse();
-    println!("{cli:?}");
+    let db = sqlx::SqlitePool::connect("twodo.db")
+        .await?;
+    delegate(db, cli);
+    Ok(())
 }
 
