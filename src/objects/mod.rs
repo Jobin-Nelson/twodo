@@ -2,8 +2,8 @@ use sqlx::prelude::FromRow;
 
 #[derive(Debug, FromRow)]
 pub struct Task {
-    id: usize,
-    title: String,
-    description: String,
+    pub id: i64,
+    pub title: String,
+    pub description: String,
 }
 

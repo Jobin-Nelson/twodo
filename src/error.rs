@@ -14,7 +14,10 @@ pub enum Error {
     Io(std::io::Error),
 
     #[from]
-    Sql(sqlx::error::Error)
+    Sql(sqlx::error::Error),
+
+    #[from]
+    Migrate(sqlx::migrate::MigrateError),
 }
 
 // region:    --- Custom

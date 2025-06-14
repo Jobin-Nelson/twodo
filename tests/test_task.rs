@@ -1,6 +1,5 @@
 use clap::Parser;
-use twodo::Cli;
-use sqlx::Row;
+use twodo::{controller::delegate, objects::Task, Cli};
 
 type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>; // For tests.
 
@@ -9,29 +8,20 @@ async fn test_add_tasks() -> Result<()> {
     // -- Setup & Fixtures
     let db = sqlx::sqlite::SqlitePool::connect("sqlite::memory:").await?;
     // create table
-    let result = sqlx::query(
-        "CREATE TABLE tasks (
-                id INTEGER PRIMARY KEY,
-                title TEXT NOT NULL,
-                description TEXT
-            ) STRICT",
-    )
-    .execute(&db)
-    .await?;
-    println!("Created table tasks {:?}", result);
+    sqlx::migrate!("./migrations").run(&db).await?;
 
     // -- Exec
     let task_title = "'Buy Milk'";
-    let _ = Cli::try_parse_from(["twodo", "add", task_title])?;
+    let args = Cli::try_parse_from(["twodo", "add", task_title])?;
+    delegate(&db, args).await?;
 
     // -- Check
-    let result = sqlx::query(
-        format!("SELECT * from tasks where title={task_title};").as_str()
-    )
-    .fetch_one(&db)
-    .await?;
+    let task: Task = sqlx::query_as("SELECT * FROM tasks WHERE title = ?1")
+        .bind(task_title)
+        .fetch_one(&db)
+        .await?;
 
-    let result_title: String = result.get("title");
+    let result_title: String = task.title;
     assert_eq!(result_title, task_title);
     Ok(())
 }
