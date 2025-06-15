@@ -1,6 +1,6 @@
 use sqlx::prelude::FromRow;
 
-#[derive(Debug, FromRow)]
+#[derive(Debug, PartialEq, FromRow)]
 pub struct Task {
     pub id: i64,
     pub title: String,

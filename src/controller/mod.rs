@@ -1,5 +1,5 @@
 use crate::{
-    cli::{AddArg, EditArg, ListArg, Op},
+    cli::{AddArg, DeleteArg, EditArg, ListArg, Op},
     objects::Task,
     Cli, Result,
 };
@@ -12,7 +12,7 @@ pub async fn delegate(db: &SqlitePool, cli: Cli) -> Result<()> {
         Op::Add(add_arg) => add_task(db, add_arg).await?,
         Op::Edit(edit_arg) => edit_task(db, edit_arg).await?,
         Op::Done => todo!(),
-        Op::Delete => todo!(),
+        Op::Delete(delete_arg) => delete_task(db, delete_arg).await?,
     }
 
     Ok(())
@@ -69,5 +69,14 @@ pub async fn edit_task(db: &SqlitePool, edit_arg: EditArg) -> Result<()> {
         query = query.bind(arg);
     }
     query.execute(db).await?;
+    Ok(())
+}
+
+pub async fn delete_task(db: &SqlitePool, edit_arg: DeleteArg) -> Result<()> {
+    sqlx::query("DELETE FROM tasks WHERE id = ?1")
+        .bind(edit_arg.id)
+        .execute(db)
+        .await?;
+
     Ok(())
 }

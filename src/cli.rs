@@ -33,7 +33,7 @@ pub enum Op {
     Edit(EditArg),
 
     /// Delete a twodo
-    Delete,
+    Delete(DeleteArg),
 }
 
 /// List arguments for twodo
@@ -72,6 +72,13 @@ pub struct EditArg {
     /// Description of twodo
     #[arg(short, long)]
     pub description: Option<String>,
+}
+
+/// Delete arguments for twodo
+#[derive(Debug, Args)]
+pub struct DeleteArg {
+    /// Id of twodo to delete
+    pub id: i64,
 }
 
 // region:    --- Tests
