@@ -8,10 +8,6 @@ use clap::{Args, Parser, Subcommand};
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 pub struct Cli {
-    /// Config file to use
-    #[arg(short, long, value_name = "FILE")]
-    pub config: Option<PathBuf>,
-
     /// Operation for twodo
     #[command(subcommand)]
     pub op: Option<Op>,
