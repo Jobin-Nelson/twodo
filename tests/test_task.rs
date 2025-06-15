@@ -84,6 +84,7 @@ async fn test_edit_task() -> Result<()> {
         .trim()
         .parse::<i64>()?;
 
+    println!("{edited_task_id:?}");
     let edited_task_title = "'Read zero 2 production book in rust'";
     exec_cli(
         &db,
@@ -93,11 +94,11 @@ async fn test_edit_task() -> Result<()> {
 
     // -- Check
     let task: Task = sqlx::query_as("SELECT * FROM tasks WHERE title = ?1")
-        .bind(task_title)
+        .bind(edited_task_title)
         .fetch_one(&db)
         .await?;
 
     let result_title: String = task.title;
-    assert_eq!(result_title, task_title);
+    assert_eq!(result_title, edited_task_title);
     Ok(())
 }

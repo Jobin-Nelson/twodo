@@ -30,7 +30,7 @@ pub enum Op {
     Done,
 
     /// Edit a twodo
-    Edit,
+    Edit(EditArg),
 
     /// Delete a twodo
     Delete,
@@ -56,6 +56,21 @@ pub struct AddArg {
 
     /// Description for twodo
     #[arg(short, long, requires = "title")]
+    pub description: Option<String>,
+}
+
+/// Edit arguments for twodo
+#[derive(Debug, Args)]
+pub struct EditArg {
+    /// Id of twodo to edit
+    pub id: i64,
+
+    /// Title of twodo
+    #[arg(short, long)]
+    pub title: Option<String>,
+
+    /// Description of twodo
+    #[arg(short, long)]
     pub description: Option<String>,
 }
 
