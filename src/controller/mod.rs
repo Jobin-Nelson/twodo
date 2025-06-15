@@ -46,12 +46,28 @@ pub async fn list_task<T: std::io::Write>(
 }
 
 pub async fn edit_task(db: &SqlitePool, edit_arg: EditArg) -> Result<()> {
+    let mut query_str = "UPDATE tasks SET ".to_string();
+    let mut args = Vec::new();
+    let mut set_clauses = Vec::new();
+
     if let Some(title) = edit_arg.title {
-        sqlx::query("UPDATE tasks SET title = ?2 WHERE id = ?1")
-            .bind(edit_arg.id)
-            .bind(title)
-            .execute(db)
-            .await?;
+        set_clauses.push("title = ?");
+        args.push(title);
     }
+
+    if let Some(description) = edit_arg.description {
+        set_clauses.push("description = ?");
+        args.push(description);
+    }
+
+    query_str.push_str(&set_clauses.join(", "));
+    query_str.push_str(" WHERE id = ?");
+    args.push(edit_arg.id.to_string());
+
+    let mut query = sqlx::query::<sqlx::Sqlite>(&query_str);
+    for arg in args {
+        query = query.bind(arg);
+    }
+    query.execute(db).await?;
     Ok(())
 }

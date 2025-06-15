@@ -84,7 +84,6 @@ async fn test_edit_task() -> Result<()> {
         .trim()
         .parse::<i64>()?;
 
-    println!("{edited_task_id:?}");
     let edited_task_title = "'Read zero 2 production book in rust'";
     exec_cli(
         &db,
