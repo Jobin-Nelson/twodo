@@ -39,7 +39,7 @@ pub async fn list_task<T: std::io::Write>(
     let tasks: Vec<Task> = sqlx::query_as("SELECT * FROM tasks").fetch_all(db).await?;
 
     for task in tasks {
-        writeln!(writer, "- {}", task.title)?;
+        writeln!(writer, "{}. {}", task.id, task.title)?;
     }
 
     Ok(())
