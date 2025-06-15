@@ -10,14 +10,11 @@ type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>; // For tes
 #[tokio::test]
 async fn test_add_tasks() -> Result<()> {
     // -- Setup & Fixtures
-    let db = sqlx::sqlite::SqlitePool::connect("sqlite::memory:").await?;
-    // create table
-    sqlx::migrate!("./migrations").run(&db).await?;
+    let db = init_db().await?;
 
     // -- Exec
     let task_title = "'Buy Milk'";
-    let args = Cli::try_parse_from(["twodo", "add", task_title])?;
-    delegate(&db, args).await?;
+    exec_cli(&db, vec!["twodo", "add", task_title]).await?;
 
     // -- Check
     let task: Task = sqlx::query_as("SELECT * FROM tasks WHERE title = ?1")
@@ -33,14 +30,11 @@ async fn test_add_tasks() -> Result<()> {
 #[tokio::test]
 async fn test_list_tasks() -> Result<()> {
     // -- Setup & Fixtures
-    let db = sqlx::sqlite::SqlitePool::connect("sqlite::memory:").await?;
-    // create table
-    sqlx::migrate!("./migrations").run(&db).await?;
+    let db = init_db().await?;
 
     // -- Exec
     let task_title = "'Read Harry Potter'";
-    let args = Cli::try_parse_from(["twodo", "add", task_title])?;
-    delegate(&db, args).await?;
+    exec_cli(&db, vec!["twodo", "add", task_title]).await?;
 
     // -- Check
     let mut stdout = Vec::new();
@@ -52,5 +46,18 @@ async fn test_list_tasks() -> Result<()> {
     assert!(stdout
         .windows(task_title.len())
         .any(move |sub_slice| sub_slice == task_title.as_bytes()));
+    Ok(())
+}
+
+async fn init_db() -> Result<sqlx::SqlitePool> {
+    let db = sqlx::sqlite::SqlitePool::connect("sqlite::memory:").await?;
+    // create table
+    sqlx::migrate!("./migrations").run(&db).await?;
+    Ok(db)
+}
+
+async fn exec_cli(db: &sqlx::SqlitePool, args: Vec<&str>) -> Result<()> {
+    let args = Cli::try_parse_from(args)?;
+    delegate(&db, args).await?;
     Ok(())
 }
