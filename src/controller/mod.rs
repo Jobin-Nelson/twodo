@@ -1,5 +1,5 @@
 use crate::{
-    cli::{AddArg, DeleteArg, EditArg, ListArg, Op},
+    cli::{AddArg, DeleteArg, DoneArg, EditArg, ListArg, Op},
     objects::Task,
     Cli, Result,
 };
@@ -11,7 +11,7 @@ pub async fn delegate(db: &SqlitePool, cli: Cli) -> Result<()> {
         Op::List(list_arg) => list_task(db, list_arg, &mut std::io::stdout()).await?,
         Op::Add(add_arg) => add_task(db, add_arg).await?,
         Op::Edit(edit_arg) => edit_task(db, edit_arg).await?,
-        Op::Done => todo!(),
+        Op::Done(done_arg) => complete_task(db, done_arg).await?,
         Op::Delete(delete_arg) => delete_task(db, delete_arg).await?,
     }
 
@@ -80,3 +80,13 @@ pub async fn delete_task(db: &SqlitePool, edit_arg: DeleteArg) -> Result<()> {
 
     Ok(())
 }
+
+pub async fn complete_task(db: &SqlitePool, edit_arg: DoneArg) -> Result<()> {
+    sqlx::query("UPDATE tasks SET done = true WHERE id = ?1")
+        .bind(edit_arg.id)
+        .execute(db)
+        .await?;
+
+    Ok(())
+}
+

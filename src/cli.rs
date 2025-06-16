@@ -23,7 +23,7 @@ pub enum Op {
     Add(AddArg),
 
     /// Complete a twodo
-    Done,
+    Done(DoneArg),
 
     /// Edit a twodo
     Edit(EditArg),
@@ -74,6 +74,13 @@ pub struct EditArg {
 #[derive(Debug, Args)]
 pub struct DeleteArg {
     /// Id of twodo to delete
+    pub id: i64,
+}
+
+/// Complete arguments for twodo
+#[derive(Debug, Args)]
+pub struct DoneArg {
+    /// Id of twodo to complete
     pub id: i64,
 }
 
