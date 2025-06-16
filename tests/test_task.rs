@@ -135,3 +135,25 @@ async fn test_delete_task() -> Result<()> {
     assert_eq!(None, task);
     Ok(())
 }
+
+#[tokio::test]
+async fn test_done_task() -> Result<()> {
+    // -- Setup & Fixtures
+    let db = init_db().await?;
+    let task_title = "'test done task'";
+    exec_cli(&db, vec!["twodo", "add", task_title]).await?;
+
+    // -- Exec
+    let task_id = get_task_id(&db).await?;
+
+    exec_cli(&db, vec!["twodo", "done", &task_id.to_string()]).await?;
+
+    // -- Check
+    let task: Task = sqlx::query_as("SELECT * FROM tasks WHERE title = ?1")
+        .bind(task_title)
+        .fetch_one(&db)
+        .await?;
+
+    assert!(task.done);
+    Ok(())
+}
