@@ -77,7 +77,7 @@ pub struct DeleteArg {
     pub id: i64,
 }
 
-/// Complete arguments for twodo
+/// Done arguments for twodo
 #[derive(Debug, Args)]
 pub struct DoneArg {
     /// Id of twodo to complete
