@@ -4,6 +4,7 @@ use crossterm::event::{Event, EventStream, KeyCode, KeyEvent, KeyEventKind, KeyM
 use futures::{FutureExt, StreamExt};
 use ratatui::{style::Stylize, text::Line, DefaultTerminal, Frame};
 use std::time::Duration;
+use tokio::time::Interval;
 
 #[derive(Debug, Default)]
 pub struct App {
@@ -22,7 +23,21 @@ impl App {
 
         while self.running {
             terminal.draw(|f| self.render(f));
-            self.handle_events().await?;
+
+            tokio::select! {
+                event = self.event_stream.next().fuse() =>{
+                    if let Some(Ok(evt)) = event {
+                        match evt {
+                            Event::Key(key) if key.kind == KeyEventKind::Press => self.on_key_event(key),
+                            Event::Mouse(_) => {}
+                            Event::Resize(_, _) => {}
+                            _ => {}
+                        }
+                    }
+                },
+                // Sleep for a short duration to avoid busy waiting
+                _ = interval.tick() => {}
+            }
         }
 
         Ok(())
@@ -31,23 +46,6 @@ impl App {
     pub fn render(&mut self, frame: &mut Frame) {
         let title = Line::from("Twodo CLI App").bold().green().centered();
         frame.render_widget(title, frame.area());
-    }
-
-    async fn handle_events(&mut self) -> Result<()> {
-        tokio::select! {
-            event = self.event_stream.next().fuse() =>{
-                if let Some(Ok(evt)) = event {
-                    match evt {
-                        Event::Key(key) if key.kind == KeyEventKind::Press => self.on_key_event(key),
-                        Event::Mouse(_) => {}
-                        Event::Resize(_, _) => {}
-                        _ => {}
-                    }
-                }
-            }
-
-        }
-        Ok(())
     }
 
     fn on_key_event(&mut self, key: KeyEvent) {
