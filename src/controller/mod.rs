@@ -2,11 +2,17 @@ use crate::{
     cli::{AddArg, DeleteArg, DoneArg, EditArg, ListArg, Op},
     objects::Task,
     Cli, Result,
+    App,
 };
 use sqlx::SqlitePool;
 
 pub async fn delegate(db: &SqlitePool, cli: Cli) -> Result<()> {
-    let op = cli.op.unwrap_or_else(|| Op::List(ListArg::default()));
+    // Start TUI if no operation is specified
+    if cli.op.is_none() {
+        return start_tui().await;
+    }
+
+    let op = cli.op.unwrap();
     match op {
         Op::List(list_arg) => list_task(db, list_arg, &mut std::io::stdout()).await?,
         Op::Add(add_arg) => add_task(db, add_arg).await?,
@@ -90,3 +96,9 @@ pub async fn done_task(db: &SqlitePool, edit_arg: DoneArg) -> Result<()> {
     Ok(())
 }
 
+pub async fn start_tui() -> Result<()> {
+    let terminal = ratatui::init();
+    let app_result = App::default().run(terminal).await;
+    ratatui::restore();
+    app_result
+}
