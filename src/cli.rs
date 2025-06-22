@@ -14,7 +14,7 @@ pub struct Cli {
 }
 
 /// Operations on twodos
-#[derive(Subcommand, Debug)]
+#[derive(Subcommand, Debug, PartialEq)]
 pub enum Op {
     /// List all twodo
     List(ListArg),
@@ -33,7 +33,7 @@ pub enum Op {
 }
 
 /// List arguments for twodo
-#[derive(Debug, Default, Args)]
+#[derive(Debug, Default, PartialEq, Args)]
 pub struct ListArg {
     /// Output format
     #[arg(short, long)]
@@ -45,7 +45,7 @@ pub struct ListArg {
 }
 
 /// Add arguments for twodo
-#[derive(Args, Debug)]
+#[derive(Debug, PartialEq, Args)]
 pub struct AddArg {
     /// Title of twodo
     pub title: String,
@@ -56,7 +56,7 @@ pub struct AddArg {
 }
 
 /// Edit arguments for twodo
-#[derive(Debug, Args)]
+#[derive(Debug, PartialEq, Args)]
 pub struct EditArg {
     /// Id of twodo to edit
     pub id: i64,
@@ -71,14 +71,14 @@ pub struct EditArg {
 }
 
 /// Delete arguments for twodo
-#[derive(Debug, Args)]
+#[derive(Debug, PartialEq, Args)]
 pub struct DeleteArg {
     /// Id of twodo to delete
     pub id: i64,
 }
 
 /// Done arguments for twodo
-#[derive(Debug, Args)]
+#[derive(Debug, PartialEq, Args)]
 pub struct DoneArg {
     /// Id of twodo to complete
     pub id: i64,

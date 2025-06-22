@@ -1,6 +1,6 @@
 use clap::Parser;
 use twodo::{
-    controller::{delegate, list_task},
+    controller::{delegate_op, list_task},
     objects::Task,
     Cli,
 };
@@ -16,7 +16,7 @@ async fn init_db() -> Result<sqlx::SqlitePool> {
 
 async fn exec_cli(db: &sqlx::SqlitePool, args: Vec<&str>) -> Result<()> {
     let args = Cli::try_parse_from(args)?;
-    delegate(db, args).await?;
+    delegate_op(db, args.op.unwrap()).await?;
     Ok(())
 }
 
