@@ -1,4 +1,4 @@
-use crate::{cli, controller::delegate_op, Result};
+use crate::{cli, controller::delegate_op, objects::Task, Result};
 
 use crossterm::event::{Event, EventStream, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 use futures::{FutureExt, StreamExt};
@@ -12,6 +12,7 @@ pub struct App {
     db: SqlitePool,
     running: RunningState,
     event_stream: EventStream,
+    tasks: Vec<Task>,
 }
 
 #[derive(Debug, PartialEq, Default)]
@@ -31,12 +32,14 @@ pub enum Message {
 impl App {
     const FRAMES_PER_SECOND: f32 = 60.0;
 
-    pub fn new(db: SqlitePool) -> Self {
-        Self {
+    pub async fn new(db: SqlitePool) -> Result<Self> {
+        let tasks = get_todo_tasks(&db).await?;
+        Ok(Self {
             db,
             running: Default::default(),
             event_stream: Default::default(),
-        }
+            tasks,
+        })
     }
 
     pub async fn run(mut self, mut terminal: DefaultTerminal) -> Result<()> {
@@ -104,5 +107,11 @@ impl App {
             Message::Noop => todo!(),
         }
     }
+}
 
+async fn get_todo_tasks(db: &sqlx::Pool<sqlx::Sqlite>) -> Result<Vec<Task>> {
+    sqlx::query_as::<_, Task>("SELECT * FROM tasks where done = 0")
+        .fetch_all(db)
+        .await
+        .map_err(Into::into)
 }
