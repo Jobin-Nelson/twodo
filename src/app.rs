@@ -12,7 +12,7 @@ pub struct App {
     db: SqlitePool,
     running: RunningState,
     event_stream: EventStream,
-    tasks: Vec<Task>,
+    pub tasks: Vec<Task>,
 }
 
 #[derive(Debug, PartialEq, Default)]
@@ -97,6 +97,7 @@ impl App {
     // ELM Architecture
     pub fn view(&mut self, frame: &mut Frame) {
         let title = Line::from("Twodo CLI App").bold().green().centered();
+
         frame.render_widget(title, frame.area());
     }
 
@@ -115,3 +116,4 @@ async fn get_todo_tasks(db: &sqlx::Pool<sqlx::Sqlite>) -> Result<Vec<Task>> {
         .await
         .map_err(Into::into)
 }
+
