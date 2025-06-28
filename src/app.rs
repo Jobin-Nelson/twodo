@@ -2,7 +2,13 @@ use crate::{cli, controller::delegate_op, objects::Task, Result};
 
 use crossterm::event::{Event, EventStream, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 use futures::{FutureExt, StreamExt};
-use ratatui::{style::Stylize, text::Line, DefaultTerminal, Frame};
+use ratatui::{
+    layout::Constraint,
+    style::{Style, Stylize},
+    text::Line,
+    widgets::{block::Position, Block, Borders, Row, Table, TableState},
+    DefaultTerminal, Frame,
+};
 use sqlx::SqlitePool;
 use std::time::Duration;
 use tokio::time::Interval;
@@ -13,6 +19,7 @@ pub struct App {
     running: RunningState,
     event_stream: EventStream,
     pub tasks: Vec<Task>,
+    pub task_state: TableState,
 }
 
 #[derive(Debug, PartialEq, Default)]
@@ -27,6 +34,8 @@ pub enum Message {
     Quit,
     Op(cli::Op),
     Noop,
+    NextTask,
+    PrevTask,
 }
 
 impl App {
@@ -39,10 +48,13 @@ impl App {
             running: Default::default(),
             event_stream: Default::default(),
             tasks,
+            task_state: Default::default(),
         })
     }
 
     pub async fn run(mut self, mut terminal: DefaultTerminal) -> Result<()> {
+        self.task_state.select_first();
+
         let period = Duration::from_secs_f32(1.0 / Self::FRAMES_PER_SECOND);
         let mut interval = tokio::time::interval(period);
         let mut events = EventStream::new();
@@ -84,6 +96,10 @@ impl App {
             (_, KeyCode::Esc | KeyCode::Char('q'))
             | (KeyModifiers::CONTROL, KeyCode::Char('c') | KeyCode::Char('C')) => Message::Quit,
 
+            // Task navigation
+            (_, KeyCode::Char('j')) => Message::NextTask,
+            (_, KeyCode::Char('k')) => Message::PrevTask,
+
             // Other key handlers
             _ => Message::Noop,
         }
@@ -96,16 +112,54 @@ impl App {
 
     // ELM Architecture
     pub fn view(&mut self, frame: &mut Frame) {
-        let title = Line::from("Twodo CLI App").bold().green().centered();
+        self.render_tasks(frame);
+    }
 
-        frame.render_widget(title, frame.area());
+    pub fn render_tasks(&mut self, frame: &mut Frame) {
+        let header = Row::new(["ID", "Title", "Description"]).bold().dark_gray();
+
+        let task_block = Block::new()
+            .title(Line::from(" Tasks ").centered().style(Style::new().bold()))
+            .borders(Borders::ALL)
+            .title_position(Position::Top);
+
+        let rows = self
+            .tasks
+            .iter()
+            .map(|t| Row::new([t.id.to_string(), t.title.clone(), t.description.clone()]))
+            .collect::<Vec<_>>();
+
+        let widths = [
+            Constraint::Length(3),
+            Constraint::Percentage(60),
+            Constraint::Fill(1),
+        ];
+
+        let table = Table::new(rows, widths)
+            .column_spacing(1)
+            .header(header)
+            .block(task_block)
+            .row_highlight_style(Style::new().green())
+            .highlight_symbol("󰜴 ");
+
+        frame.render_stateful_widget(table, frame.area(), &mut self.task_state);
     }
 
     async fn update(&mut self, action: Message) -> Result<Message> {
         match action {
             Message::Quit => self.quit(),
             Message::Op(op) => delegate_op(&self.db, op).await,
-            Message::Noop => todo!(),
+            Message::NextTask => {
+                self.task_state.select_next();
+                Ok(Message::Noop)
+            }
+            Message::PrevTask => {
+                self.task_state.select_previous();
+                Ok(Message::Noop)
+            }
+
+            // Update will never be called with Noop
+            Message::Noop => unreachable!(),
         }
     }
 }
@@ -116,4 +170,3 @@ async fn get_todo_tasks(db: &sqlx::Pool<sqlx::Sqlite>) -> Result<Vec<Task>> {
         .await
         .map_err(Into::into)
 }
-
