@@ -33,6 +33,12 @@ pub enum ProjectOp {
 
     /// Add a project
     Add(ProjectAddArg),
+
+    /// Edit a project
+    Edit(ProjectEditArg),
+
+    /// Delete a project
+    Delete(ProjectDeleteArg),
 }
 
 /// Add arguments for project
@@ -42,74 +48,96 @@ pub struct ProjectAddArg {
     pub name: String,
 }
 
+/// Edit arguments for project
+#[derive(Debug, PartialEq, Args)]
+pub struct ProjectEditArg {
+    /// Id of project to edit
+    pub id: i64,
+
+    /// Name of project
+    #[arg(short, long)]
+    pub name: String,
+}
+
+/// Delete arguments for project
+#[derive(Debug, PartialEq, Args)]
+pub struct ProjectDeleteArg {
+    /// Id of project to delete
+    pub id: i64,
+}
+
 /// Task operations
 #[derive(Subcommand, Debug, PartialEq)]
 pub enum TaskOp {
-    /// List all twodo
+    /// List all task
     List(TaskListArg),
 
-    /// Add a twodo
+    /// Add a task
     Add(TaskAddArg),
 
-    /// Complete a twodo
+    /// Complete a task
     Done(TaskDoneArg),
 
-    /// Edit a twodo
+    /// Edit a task
     Edit(TaskEditArg),
 
-    /// Delete a twodo
+    /// Delete a task
     Delete(TaskDeleteArg),
 }
 
-/// List arguments for twodo
+/// List arguments for task
 #[derive(Debug, Default, PartialEq, Args)]
 pub struct TaskListArg {
     /// Output format
     #[arg(short, long)]
     output: Option<bool>,
 
-    /// Number of twodo to list
+    /// Number of task to list
     #[arg(short)]
     number: Option<usize>,
 }
 
-/// Add arguments for twodo
+/// Add arguments for task
 #[derive(Debug, PartialEq, Args)]
 pub struct TaskAddArg {
-    /// Title of twodo
+    /// Title of task
     pub title: String,
 
-    /// Description for twodo
+    /// Description for task
     #[arg(short, long, requires = "title")]
     pub description: Option<String>,
+
+    /// Project id for task
+    #[arg(short, long, default_value_t = 1)]
+    pub project_id: i64,
 }
 
-/// Edit arguments for twodo
+/// Edit arguments for task
 #[derive(Debug, PartialEq, Args)]
 pub struct TaskEditArg {
-    /// Id of twodo to edit
+    /// Id of task to edit
     pub id: i64,
 
-    /// Title of twodo
+    /// Title of task
     #[arg(short, long)]
     pub title: Option<String>,
 
-    /// Description of twodo
+    /// Description of task
     #[arg(short, long)]
     pub description: Option<String>,
 }
 
-/// Delete arguments for twodo
+/// Delete arguments for task
 #[derive(Debug, PartialEq, Args)]
 pub struct TaskDeleteArg {
-    /// Id of twodo to delete
+    /// Id of task to delete
     pub id: i64,
 }
 
-/// Done arguments for twodo
+/// Done arguments for task
 #[derive(Debug, PartialEq, Args)]
 pub struct TaskDoneArg {
-    /// Id of twodo to complete
+    /// Id of task to complete
     pub id: i64,
 }
 

@@ -11,7 +11,7 @@ async fn test_app_new() -> common::Result<()> {
         "'Rest day'",
     ];
     for task in tasks {
-        common::exec_cli(&db, vec!["twodo", "add", task]).await?;
+        common::exec_cli(&db, vec!["twodo", "task", "add", task]).await?;
     }
 
     // -- Exec

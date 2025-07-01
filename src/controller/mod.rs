@@ -1,9 +1,9 @@
 use crate::{
     app::Message,
     cli::{
-        Item, ProjectOp, TaskAddArg, TaskDeleteArg, TaskDoneArg, TaskEditArg, TaskListArg, TaskOp, ProjectAddArg,
+        Item, ProjectAddArg, ProjectDeleteArg, ProjectEditArg, ProjectOp, TaskAddArg, TaskDeleteArg, TaskDoneArg, TaskEditArg, TaskListArg, TaskOp
     },
-    objects::{Task, Project},
+    objects::{Project, Task},
     App, Cli, Result,
 };
 use sqlx::{migrate::MigrateDatabase, SqlitePool};
@@ -57,6 +57,8 @@ pub async fn delegate_project_op(db: &SqlitePool, op: ProjectOp) -> Result<Messa
     match op {
         ProjectOp::List => list_project(db, &mut std::io::stdout()).await,
         ProjectOp::Add(add_arg) => add_project(db, add_arg).await,
+        ProjectOp::Edit(project_edit_arg) => edit_project(db, project_edit_arg).await,
+        ProjectOp::Delete(project_delete_arg) => delete_project(db, project_delete_arg).await,
     }
 }
 
@@ -148,7 +150,7 @@ pub async fn list_project(db: &SqlitePool, mut writer: impl std::io::Write) -> R
         .await?;
 
     for project in projects {
-        writeln!(writer, "{}", project.name)?;
+        writeln!(writer, "{}. {}", project.id, project.name)?;
     }
 
     Ok(Message::Noop)
@@ -162,6 +164,35 @@ pub async fn add_project(db: &SqlitePool, add_arg: ProjectAddArg) -> Result<Mess
     .bind(add_arg.name)
     .fetch_one(db)
     .await?;
+
+    Ok(Message::Noop)
+}
+
+pub async fn edit_project(db: &SqlitePool, edit_arg: ProjectEditArg) -> Result<Message> {
+    let mut query_str = "UPDATE projects SET ".to_string();
+    let mut args = Vec::new();
+    let mut set_clauses = Vec::new();
+
+    set_clauses.push("name = ?");
+    args.push(edit_arg.name);
+
+    query_str.push_str(&set_clauses.join(", "));
+    query_str.push_str(" WHERE id = ?");
+    args.push(edit_arg.id.to_string());
+
+    let mut query = sqlx::query::<sqlx::Sqlite>(&query_str);
+    for arg in args {
+        query = query.bind(arg);
+    }
+    query.execute(db).await?;
+    Ok(Message::Noop)
+}
+
+pub async fn delete_project(db: &SqlitePool, edit_arg: ProjectDeleteArg) -> Result<Message> {
+    sqlx::query("DELETE FROM projects WHERE id = ?1")
+        .bind(edit_arg.id)
+        .execute(db)
+        .await?;
 
     Ok(Message::Noop)
 }

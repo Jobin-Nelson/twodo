@@ -45,62 +45,63 @@ async fn test_add_project() -> Result<()> {
 //     Ok(())
 // }
 //
-// #[tokio::test]
-// async fn test_edit_task() -> Result<()> {
-//     // -- Setup & Fixtures
-//     let db = common::init_db().await?;
-//     let task_title = "'Read zero 2 production in rust'";
-//     common::exec_cli(&db, vec!["twodo", "add", task_title]).await?;
-//
-//     // -- Exec
-//     let edited_task_id = common::get_task_id(&db).await?;
-//
-//     let edited_task_title = "'Read zero 2 production book in rust'";
-//     common::exec_cli(
-//         &db,
-//         vec![
-//             "twodo",
-//             "edit",
-//             &edited_task_id.to_string(),
-//             "-t",
-//             edited_task_title,
-//         ],
-//     )
-//     .await?;
-//
-//     // -- Check
-//     let task: Task = sqlx::query_as("SELECT * FROM tasks WHERE title = ?1")
-//         .bind(edited_task_title)
-//         .fetch_one(&db)
-//         .await?;
-//
-//     let result_title: String = task.title;
-//     assert_eq!(result_title, edited_task_title);
-//     Ok(())
-// }
-//
-// #[tokio::test]
-// async fn test_delete_task() -> Result<()> {
-//     // -- Setup & Fixtures
-//     let db = common::init_db().await?;
-//     let task_title = "'test delete task'";
-//     common::exec_cli(&db, vec!["twodo", "add", task_title]).await?;
-//
-//     // -- Exec
-//     let task_id = common::get_task_id(&db).await?;
-//
-//     common::exec_cli(&db, vec!["twodo", "delete", &task_id.to_string()]).await?;
-//
-//     // -- Check
-//     let task: Option<Task> = sqlx::query_as("SELECT * FROM tasks WHERE title = ?1")
-//         .bind(task_title)
-//         .fetch_optional(&db)
-//         .await?;
-//
-//     assert_eq!(None, task);
-//     Ok(())
-// }
-//
+#[tokio::test]
+async fn test_edit_project() -> Result<()> {
+    // -- Setup & Fixtures
+    let db = common::init_db().await?;
+    let project_name = "'School'";
+    common::exec_cli(&db, vec!["twodo", "project", "add", project_name]).await?;
+
+    // -- Exec
+    let edited_project_id = common::get_project_id(&db).await?;
+
+    let edited_project_name = "'College'";
+    common::exec_cli(
+        &db,
+        vec![
+            "twodo",
+            "project",
+            "edit",
+            &edited_project_id.to_string(),
+            "-n",
+            edited_project_name,
+        ],
+    )
+    .await?;
+
+    // -- Check
+    let project: Project = sqlx::query_as("SELECT * FROM projects WHERE name = ?1")
+        .bind(edited_project_name)
+        .fetch_one(&db)
+        .await?;
+
+    let result_name: String = project.name;
+    assert_eq!(result_name, edited_project_name);
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_delete_project() -> Result<()> {
+    // -- Setup & Fixtures
+    let db = common::init_db().await?;
+    let project_name = "'test delete project'";
+    common::exec_cli(&db, vec!["twodo", "project", "add", project_name]).await?;
+
+    // -- Exec
+    let project_id = 2;
+
+    common::exec_cli(&db, vec!["twodo", "project", "delete", &project_id.to_string()]).await?;
+
+    // -- Check
+    let task: Option<Project> = sqlx::query_as("SELECT * FROM projects WHERE name = ?1")
+        .bind(project_name)
+        .fetch_optional(&db)
+        .await?;
+
+    assert_eq!(None, task);
+    Ok(())
+}
+
 // #[tokio::test]
 // async fn test_done_task() -> Result<()> {
 //     // -- Setup & Fixtures
