@@ -1,9 +1,4 @@
-use clap::Parser;
-use twodo::{
-    controller::list_task,
-    objects::Task,
-    Cli,
-};
+use twodo::objects::Project;
 
 mod common;
 use common::Result;
@@ -14,17 +9,17 @@ async fn test_add_project() -> Result<()> {
     let db = common::init_db().await?;
 
     // -- Exec
-    let task_title = "'Buy Milk'";
-    common::exec_cli(&db, vec!["twodo", "project", task_title]).await?;
+    let project_name = "'part-time-work-1'";
+    common::exec_cli(&db, vec!["twodo", "project", "add", project_name]).await?;
 
     // -- Check
-    let task: Task = sqlx::query_as("SELECT * FROM tasks WHERE title = ?1")
-        .bind(task_title)
+    let project: Project = sqlx::query_as("SELECT * FROM PROJECTS WHERE name = ?1")
+        .bind(project_name)
         .fetch_one(&db)
         .await?;
 
-    let result_title: String = task.title;
-    assert_eq!(result_title, task_title);
+    let result_name: String = project.name;
+    assert_eq!(result_name, project_name);
     Ok(())
 }
 

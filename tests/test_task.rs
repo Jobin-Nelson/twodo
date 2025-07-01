@@ -41,7 +41,7 @@ async fn test_list_tasks() -> Result<()> {
     let mut stdout = Vec::new();
     let args = Cli::try_parse_from(["twodo", "list"])?;
     match args.op {
-        Some(twodo::cli::Op::List(list_arg)) => list_task(&db, list_arg, &mut stdout).await?,
+        Some(twodo::cli::TaskOp::List(list_arg)) => list_task(&db, list_arg, &mut stdout).await?,
         _ => panic!("Expected list operation"),
     };
     assert!(stdout

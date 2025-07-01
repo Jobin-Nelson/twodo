@@ -1,5 +1,10 @@
 use crate::{
-    app::Message, cli::{AddArg, DeleteArg, DoneArg, EditArg, ListArg, Op}, objects::Task, App, Cli, Result
+    app::Message,
+    cli::{
+        Item, ProjectOp, TaskAddArg, TaskDeleteArg, TaskDoneArg, TaskEditArg, TaskListArg, TaskOp, ProjectAddArg,
+    },
+    objects::{Task, Project},
+    App, Cli, Result,
 };
 use sqlx::{migrate::MigrateDatabase, SqlitePool};
 
@@ -35,23 +40,37 @@ pub async fn delegate(cli: Cli) -> Result<()> {
     // Start TUI if no operation is specified
     let db = init_db().await?;
 
-    match cli.op {
-        Some(op) => delegate_op(&db, op).await.map(|_| ()),
+    match cli.item {
+        Some(op) => delegate_item(&db, op).await.map(|_| ()),
         None => start_tui(db).await,
     }
 }
 
-pub async fn delegate_op(db: &SqlitePool, op: Op) -> Result<Message> {
-    match op {
-        Op::List(list_arg) => list_task(db, list_arg, &mut std::io::stdout()).await,
-        Op::Add(add_arg) => add_task(db, add_arg).await,
-        Op::Edit(edit_arg) => edit_task(db, edit_arg).await,
-        Op::Done(done_arg) => done_task(db, done_arg).await,
-        Op::Delete(delete_arg) => delete_task(db, delete_arg).await,
+pub async fn delegate_item(db: &SqlitePool, item: Item) -> Result<Message> {
+    match item {
+        Item::Project(project_op) => delegate_project_op(db, project_op).await,
+        Item::Task(task_op) => delegate_task_op(db, task_op).await,
     }
 }
 
-pub async fn add_task(db: &SqlitePool, add_arg: AddArg) -> Result<Message> {
+pub async fn delegate_project_op(db: &SqlitePool, op: ProjectOp) -> Result<Message> {
+    match op {
+        ProjectOp::List => list_project(db, &mut std::io::stdout()).await,
+        ProjectOp::Add(add_arg) => add_project(db, add_arg).await,
+    }
+}
+
+pub async fn delegate_task_op(db: &SqlitePool, op: TaskOp) -> Result<Message> {
+    match op {
+        TaskOp::List(list_arg) => list_task(db, list_arg, &mut std::io::stdout()).await,
+        TaskOp::Add(add_arg) => add_task(db, add_arg).await,
+        TaskOp::Edit(edit_arg) => edit_task(db, edit_arg).await,
+        TaskOp::Done(done_arg) => done_task(db, done_arg).await,
+        TaskOp::Delete(delete_arg) => delete_task(db, delete_arg).await,
+    }
+}
+
+pub async fn add_task(db: &SqlitePool, add_arg: TaskAddArg) -> Result<Message> {
     let result: i64 = sqlx::query_scalar(
         "INSERT INTO tasks (title, description)
         VALUES (?1, ?2) RETURNING id",
@@ -66,7 +85,7 @@ pub async fn add_task(db: &SqlitePool, add_arg: AddArg) -> Result<Message> {
 
 pub async fn list_task<T: std::io::Write>(
     db: &SqlitePool,
-    add_arg: ListArg,
+    add_arg: TaskListArg,
     mut writer: T,
 ) -> Result<Message> {
     let tasks: Vec<Task> = sqlx::query_as("SELECT * FROM tasks").fetch_all(db).await?;
@@ -78,7 +97,7 @@ pub async fn list_task<T: std::io::Write>(
     Ok(Message::Noop)
 }
 
-pub async fn edit_task(db: &SqlitePool, edit_arg: EditArg) -> Result<Message> {
+pub async fn edit_task(db: &SqlitePool, edit_arg: TaskEditArg) -> Result<Message> {
     let mut query_str = "UPDATE tasks SET ".to_string();
     let mut args = Vec::new();
     let mut set_clauses = Vec::new();
@@ -105,7 +124,7 @@ pub async fn edit_task(db: &SqlitePool, edit_arg: EditArg) -> Result<Message> {
     Ok(Message::Noop)
 }
 
-pub async fn delete_task(db: &SqlitePool, edit_arg: DeleteArg) -> Result<Message> {
+pub async fn delete_task(db: &SqlitePool, edit_arg: TaskDeleteArg) -> Result<Message> {
     sqlx::query("DELETE FROM tasks WHERE id = ?1")
         .bind(edit_arg.id)
         .execute(db)
@@ -114,11 +133,35 @@ pub async fn delete_task(db: &SqlitePool, edit_arg: DeleteArg) -> Result<Message
     Ok(Message::Noop)
 }
 
-pub async fn done_task(db: &SqlitePool, edit_arg: DoneArg) -> Result<Message> {
+pub async fn done_task(db: &SqlitePool, edit_arg: TaskDoneArg) -> Result<Message> {
     sqlx::query("UPDATE tasks SET done = true WHERE id = ?1")
         .bind(edit_arg.id)
         .execute(db)
         .await?;
+
+    Ok(Message::Noop)
+}
+
+pub async fn list_project(db: &SqlitePool, mut writer: impl std::io::Write) -> Result<Message> {
+    let projects: Vec<Project> = sqlx::query_as("SELECT * FROM projects")
+        .fetch_all(db)
+        .await?;
+
+    for project in projects {
+        writeln!(writer, "{}", project.name)?;
+    }
+
+    Ok(Message::Noop)
+}
+
+pub async fn add_project(db: &SqlitePool, add_arg: ProjectAddArg) -> Result<Message> {
+    let result: i64 = sqlx::query_scalar(
+        "INSERT INTO projects (name)
+        VALUES (?1) RETURNING id",
+    )
+    .bind(add_arg.name)
+    .fetch_one(db)
+    .await?;
 
     Ok(Message::Noop)
 }
@@ -129,4 +172,3 @@ pub async fn start_tui(db: SqlitePool) -> Result<()> {
     ratatui::restore();
     app_result
 }
-

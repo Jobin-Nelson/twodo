@@ -10,31 +10,60 @@ use clap::{Args, Parser, Subcommand};
 pub struct Cli {
     /// Operation for twodo
     #[command(subcommand)]
-    pub op: Option<Op>,
+    pub item: Option<Item>,
 }
 
-/// Operations on twodos
+/// Twodo items
 #[derive(Subcommand, Debug, PartialEq)]
-pub enum Op {
+pub enum Item {
+    /// Project operations
+    #[command(subcommand)]
+    Project(ProjectOp),
+
+    /// Task operations
+    #[command(subcommand)]
+    Task(TaskOp),
+}
+
+/// Project operations
+#[derive(Subcommand, Debug, PartialEq)]
+pub enum ProjectOp {
+    /// List all projects
+    List,
+
+    /// Add a project
+    Add(ProjectAddArg),
+}
+
+/// Add arguments for project
+#[derive(Debug, PartialEq, Args)]
+pub struct ProjectAddArg {
+    /// Name of project
+    pub name: String,
+}
+
+/// Task operations
+#[derive(Subcommand, Debug, PartialEq)]
+pub enum TaskOp {
     /// List all twodo
-    List(ListArg),
+    List(TaskListArg),
 
     /// Add a twodo
-    Add(AddArg),
+    Add(TaskAddArg),
 
     /// Complete a twodo
-    Done(DoneArg),
+    Done(TaskDoneArg),
 
     /// Edit a twodo
-    Edit(EditArg),
+    Edit(TaskEditArg),
 
     /// Delete a twodo
-    Delete(DeleteArg),
+    Delete(TaskDeleteArg),
 }
 
 /// List arguments for twodo
 #[derive(Debug, Default, PartialEq, Args)]
-pub struct ListArg {
+pub struct TaskListArg {
     /// Output format
     #[arg(short, long)]
     output: Option<bool>,
@@ -46,7 +75,7 @@ pub struct ListArg {
 
 /// Add arguments for twodo
 #[derive(Debug, PartialEq, Args)]
-pub struct AddArg {
+pub struct TaskAddArg {
     /// Title of twodo
     pub title: String,
 
@@ -57,7 +86,7 @@ pub struct AddArg {
 
 /// Edit arguments for twodo
 #[derive(Debug, PartialEq, Args)]
-pub struct EditArg {
+pub struct TaskEditArg {
     /// Id of twodo to edit
     pub id: i64,
 
@@ -72,14 +101,14 @@ pub struct EditArg {
 
 /// Delete arguments for twodo
 #[derive(Debug, PartialEq, Args)]
-pub struct DeleteArg {
+pub struct TaskDeleteArg {
     /// Id of twodo to delete
     pub id: i64,
 }
 
 /// Done arguments for twodo
 #[derive(Debug, PartialEq, Args)]
-pub struct DoneArg {
+pub struct TaskDoneArg {
     /// Id of twodo to complete
     pub id: i64,
 }

@@ -1,4 +1,4 @@
-use crate::{cli, controller::delegate_op, objects::Task, Result};
+use crate::{cli, controller::delegate_task_op, objects::Task, Result};
 
 use crossterm::event::{Event, EventStream, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 use futures::{FutureExt, StreamExt};
@@ -32,7 +32,7 @@ pub enum RunningState {
 #[derive(Debug, PartialEq)]
 pub enum Message {
     Quit,
-    Op(cli::Op),
+    TaskOp(cli::TaskOp),
     Noop,
     NextTask,
     PrevTask,
@@ -148,7 +148,7 @@ impl App {
     async fn update(&mut self, action: Message) -> Result<Message> {
         match action {
             Message::Quit => self.quit(),
-            Message::Op(op) => delegate_op(&self.db, op).await,
+            Message::TaskOp(op) => delegate_task_op(&self.db, op).await,
             Message::NextTask => {
                 self.task_state.select_next();
                 Ok(Message::Noop)
