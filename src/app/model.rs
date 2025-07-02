@@ -9,8 +9,8 @@ pub struct App {
     pub db: SqlitePool,
     pub running: RunningState,
     pub event_stream: EventStream,
-    pub tasks: Vec<Task>,
-    pub task_state: TableState,
+    pub twodo: Twodo,
+    pub state: State,
 }
 
 #[derive(Debug, PartialEq, Default)]
@@ -18,4 +18,14 @@ pub enum RunningState {
     #[default]
     Running,
     Done,
+}
+
+#[derive(Debug)]
+pub struct Twodo {
+    pub tasks: Vec<Task>,
+}
+
+#[derive(Debug, Default)]
+pub struct State {
+    pub task_state: TableState,
 }

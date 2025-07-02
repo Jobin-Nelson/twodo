@@ -18,11 +18,11 @@ impl App {
             Message::Quit => self.quit(),
             Message::TaskOp(op) => delegate_task_op(&self.db, op).await,
             Message::NextTask => {
-                self.task_state.select_next();
+                self.state.task_state.select_next();
                 Ok(Message::Noop)
             }
             Message::PrevTask => {
-                self.task_state.select_previous();
+                self.state.task_state.select_previous();
                 Ok(Message::Noop)
             }
 

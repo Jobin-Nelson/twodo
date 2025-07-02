@@ -1,6 +1,6 @@
 use crate::{
     app::{
-        model::{App, RunningState},
+        model::{App, RunningState, State, Twodo},
         update::{message::Message, read_data::get_tasks},
     },
     Result,
@@ -15,17 +15,19 @@ impl App {
 
     pub async fn new(db: SqlitePool) -> Result<Self> {
         let tasks = get_tasks(&db).await?;
+        let twodo = Twodo { tasks };
+        let state = State::default();
         Ok(Self {
             db,
             running: Default::default(),
             event_stream: Default::default(),
-            tasks,
-            task_state: Default::default(),
+            twodo,
+            state,
         })
     }
 
     pub async fn run(mut self, mut terminal: DefaultTerminal) -> Result<()> {
-        self.task_state.select_first();
+        self.state.task_state.select_first();
 
         let period = Duration::from_secs_f32(1.0 / Self::FRAMES_PER_SECOND);
         let mut interval = tokio::time::interval(period);

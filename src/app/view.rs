@@ -21,6 +21,7 @@ impl App {
             .title_position(Position::Top);
 
         let rows = self
+            .twodo
             .tasks
             .iter()
             .map(|t| Row::new([t.id.to_string(), t.title.clone(), t.description.clone()]))
@@ -39,6 +40,6 @@ impl App {
             .row_highlight_style(Style::new().green())
             .highlight_symbol("󰜴 ");
 
-        frame.render_stateful_widget(table, frame.area(), &mut self.task_state);
+        frame.render_stateful_widget(table, frame.area(), &mut self.state.task_state);
     }
 }
