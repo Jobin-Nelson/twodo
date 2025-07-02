@@ -1,19 +1,17 @@
 // region:    --- Modules
+mod app;
+mod run;
 
-#![allow(unused)]
-/// CLI module
-pub mod cli;
-
-pub mod error;
-pub mod run;
-pub mod objects;
-pub mod controller;
-pub mod app;
-
-// -- Public use
-pub use error::{Error, Result};
-pub use cli::Cli;
-pub use run::run;
+// -- Flatten
 pub use app::App;
+pub use cli::Cli;
+pub use error::{Error, Result};
+pub use run::run;
+
+/// Pubilc modules
+pub mod cli;
+pub mod controller;
+pub mod error;
+pub mod objects;
 
 // endregion: --- Modules

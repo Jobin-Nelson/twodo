@@ -1,7 +1,8 @@
 use crate::{
     app::Message,
     cli::{
-        Item, ProjectAddArg, ProjectDeleteArg, ProjectEditArg, ProjectOp, TaskAddArg, TaskDeleteArg, TaskDoneArg, TaskEditArg, TaskListArg, TaskOp
+        Item, ProjectAddArg, ProjectDeleteArg, ProjectEditArg, ProjectOp, TaskAddArg,
+        TaskDeleteArg, TaskDoneArg, TaskEditArg, TaskListArg, TaskOp,
     },
     objects::{Project, Task},
     App, Cli, Result,
@@ -73,13 +74,13 @@ pub async fn delegate_task_op(db: &SqlitePool, op: TaskOp) -> Result<Message> {
 }
 
 pub async fn add_task(db: &SqlitePool, add_arg: TaskAddArg) -> Result<Message> {
-    let result: i64 = sqlx::query_scalar(
+    sqlx::query(
         "INSERT INTO tasks (title, description)
-        VALUES (?1, ?2) RETURNING id",
+        VALUES (?1, ?2)",
     )
     .bind(add_arg.title)
     .bind(add_arg.description)
-    .fetch_one(db)
+    .execute(db)
     .await?;
 
     Ok(Message::Noop)
@@ -87,7 +88,7 @@ pub async fn add_task(db: &SqlitePool, add_arg: TaskAddArg) -> Result<Message> {
 
 pub async fn list_task<T: std::io::Write>(
     db: &SqlitePool,
-    add_arg: TaskListArg,
+    _list_arg: TaskListArg,
     mut writer: T,
 ) -> Result<Message> {
     let tasks: Vec<Task> = sqlx::query_as("SELECT * FROM tasks").fetch_all(db).await?;
@@ -157,34 +158,23 @@ pub async fn list_project(db: &SqlitePool, mut writer: impl std::io::Write) -> R
 }
 
 pub async fn add_project(db: &SqlitePool, add_arg: ProjectAddArg) -> Result<Message> {
-    let result: i64 = sqlx::query_scalar(
+    sqlx::query(
         "INSERT INTO projects (name)
-        VALUES (?1) RETURNING id",
+        VALUES (?1)",
     )
     .bind(add_arg.name)
-    .fetch_one(db)
+    .execute(db)
     .await?;
 
     Ok(Message::Noop)
 }
 
 pub async fn edit_project(db: &SqlitePool, edit_arg: ProjectEditArg) -> Result<Message> {
-    let mut query_str = "UPDATE projects SET ".to_string();
-    let mut args = Vec::new();
-    let mut set_clauses = Vec::new();
-
-    set_clauses.push("name = ?");
-    args.push(edit_arg.name);
-
-    query_str.push_str(&set_clauses.join(", "));
-    query_str.push_str(" WHERE id = ?");
-    args.push(edit_arg.id.to_string());
-
-    let mut query = sqlx::query::<sqlx::Sqlite>(&query_str);
-    for arg in args {
-        query = query.bind(arg);
-    }
-    query.execute(db).await?;
+    sqlx::query::<sqlx::Sqlite>("UPDATE projects SET name = ? WHERE id = ?")
+        .bind(edit_arg.name)
+        .bind(edit_arg.id)
+        .execute(db)
+        .await?;
     Ok(Message::Noop)
 }
 

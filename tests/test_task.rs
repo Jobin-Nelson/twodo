@@ -59,7 +59,7 @@ async fn test_edit_task() -> Result<()> {
     common::exec_cli(&db, vec!["twodo", "task", "add", task_title]).await?;
 
     // -- Exec
-    let edited_task_id = common::get_task_id(&db).await?;
+    let edited_task_id = 1;
 
     let edited_task_title = "'Read zero 2 production book in rust'";
     common::exec_cli(
@@ -94,7 +94,7 @@ async fn test_delete_task() -> Result<()> {
     common::exec_cli(&db, vec!["twodo", "task", "add", task_title]).await?;
 
     // -- Exec
-    let task_id = common::get_task_id(&db).await?;
+    let task_id = 1;
 
     common::exec_cli(&db, vec!["twodo", "task", "delete", &task_id.to_string()]).await?;
 
@@ -122,7 +122,7 @@ async fn test_done_task() -> Result<()> {
     assert!(!task.done);
 
     // -- Exec
-    let task_id = common::get_task_id(&db).await?;
+    let task_id = 1;
     common::exec_cli(&db, vec!["twodo", "task", "done", &task_id.to_string()]).await?;
 
     // -- Check

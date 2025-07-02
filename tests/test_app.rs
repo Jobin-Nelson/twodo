@@ -1,4 +1,4 @@
-use twodo::app::App;
+use twodo::App;
 mod common;
 
 #[tokio::test]

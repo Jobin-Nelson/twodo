@@ -53,7 +53,7 @@ async fn test_edit_project() -> Result<()> {
     common::exec_cli(&db, vec!["twodo", "project", "add", project_name]).await?;
 
     // -- Exec
-    let edited_project_id = common::get_project_id(&db).await?;
+    let edited_project_id = 2;
 
     let edited_project_name = "'College'";
     common::exec_cli(
