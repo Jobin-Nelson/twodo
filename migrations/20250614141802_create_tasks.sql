@@ -5,6 +5,6 @@ CREATE TABLE IF NOT EXISTS tasks (
   description TEXT,
   done INTEGER NOT NULL DEFAULT false,
   project_id INTEGER NOT NULL DEFAULT 1,
-  FOREIGN KEY(project_id) REFERENCES projects(id)
+  FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE
 ) STRICT;
 

@@ -1,4 +1,4 @@
-use twodo::objects::Project;
+use twodo::objects::{Project, Task};
 
 mod common;
 use common::Result;
@@ -23,28 +23,6 @@ async fn test_add_project() -> Result<()> {
     Ok(())
 }
 
-// #[tokio::test]
-// async fn test_list_tasks() -> Result<()> {
-//     // -- Setup & Fixtures
-//     let db = common::init_db().await?;
-//
-//     // -- Exec
-//     let task_title = "'Read Harry Potter'";
-//     common::exec_cli(&db, vec!["twodo", "add", task_title]).await?;
-//
-//     // -- Check
-//     let mut stdout = Vec::new();
-//     let args = Cli::try_parse_from(["twodo", "list"])?;
-//     match args.op {
-//         Some(twodo::cli::Op::List(list_arg)) => list_task(&db, list_arg, &mut stdout).await?,
-//         _ => panic!("Expected list operation"),
-//     };
-//     assert!(stdout
-//         .windows(task_title.len())
-//         .any(move |sub_slice| sub_slice == task_title.as_bytes()));
-//     Ok(())
-// }
-//
 #[tokio::test]
 async fn test_edit_project() -> Result<()> {
     // -- Setup & Fixtures
@@ -106,29 +84,57 @@ async fn test_delete_project() -> Result<()> {
     Ok(())
 }
 
-// #[tokio::test]
-// async fn test_done_task() -> Result<()> {
-//     // -- Setup & Fixtures
-//     let db = common::init_db().await?;
-//     let task_title = "'test done task'";
-//     common::exec_cli(&db, vec!["twodo", "add", task_title]).await?;
-//     let task: Task = sqlx::query_as("SELECT * FROM tasks WHERE title = ?1")
-//         .bind(task_title)
-//         .fetch_one(&db)
-//         .await?;
-//
-//     assert!(!task.done);
-//
-//     // -- Exec
-//     let task_id = common::get_task_id(&db).await?;
-//     common::exec_cli(&db, vec!["twodo", "done", &task_id.to_string()]).await?;
-//
-//     // -- Check
-//     let task: Task = sqlx::query_as("SELECT * FROM tasks WHERE title = ?1")
-//         .bind(task_title)
-//         .fetch_one(&db)
-//         .await?;
-//
-//     assert!(task.done);
-//     Ok(())
-// }
+#[tokio::test]
+async fn test_default_project() -> Result<()> {
+    // -- Setup & Fixtures
+    let db = common::init_db().await?;
+
+    // -- Exec
+    let task = "'test default project'";
+    common::exec_cli(&db, vec!["twodo", "task", "add", task]).await?;
+
+    // -- Check
+    let task_id = 1;
+    let added_task: Task = sqlx::query_as("SELECT * FROM tasks WHERE id = ?1")
+        .bind(task_id)
+        .fetch_one(&db)
+        .await?;
+    let project_id = added_task.project_id;
+    let project: Project = sqlx::query_as("SELECT * FROM projects WHERE id = ?1")
+        .bind(project_id)
+        .fetch_one(&db)
+        .await?;
+    let expected_project = "INBOX";
+    assert_eq!(expected_project, project.name);
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_cascade_delete_project() -> Result<()> {
+    // -- Setup & Fixtures
+    let db = common::init_db().await?;
+
+    // -- Exec
+    let task = "'test cascade delete project'";
+    common::exec_cli(&db, vec!["twodo", "task", "add", task]).await?;
+
+    // -- Check
+    let task_id = 1;
+    let added_task: Task = sqlx::query_as("SELECT * FROM tasks WHERE id = ?1")
+        .bind(task_id)
+        .fetch_one(&db)
+        .await?;
+    let project_id = added_task.project_id;
+    sqlx::query("DELETE FROM projects WHERE id = ?1")
+        .bind(project_id)
+        .execute(&db)
+        .await?;
+    let task: Option<Task> = sqlx::query_as("SELECT * FROM tasks WHERE id = ?1")
+        .bind(task_id)
+        .fetch_optional(&db)
+        .await?;
+
+    assert_eq!(None, task);
+    Ok(())
+}
