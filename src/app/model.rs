@@ -1,7 +1,7 @@
-use crate::objects::Task;
+use crate::objects::{Project, Task};
 
 use crossterm::event::EventStream;
-use ratatui::widgets::TableState;
+use ratatui::widgets::{ListState, TableState};
 use sqlx::SqlitePool;
 
 #[derive(Debug)]
@@ -23,9 +23,11 @@ pub enum RunningState {
 #[derive(Debug)]
 pub struct Twodo {
     pub tasks: Vec<Task>,
+    pub projects: Vec<Project>,
 }
 
 #[derive(Debug, Default)]
 pub struct State {
     pub task_state: TableState,
+    pub project_state: ListState,
 }
