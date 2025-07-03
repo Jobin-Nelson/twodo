@@ -1,5 +1,5 @@
 use clap::Parser;
-use twodo::{controller::delegate_item, Cli};
+use twodo::{Cli, controller::delegater::delegate_item};
 
 pub type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>; // For tests.
 

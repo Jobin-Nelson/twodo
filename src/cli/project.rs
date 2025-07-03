@@ -41,4 +41,3 @@ pub struct ProjectDeleteArg {
     /// Id of project to delete
     pub id: i64,
 }
-

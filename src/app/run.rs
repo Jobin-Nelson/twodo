@@ -1,9 +1,9 @@
 use crate::{
+    Result,
     app::{
         model::{App, RunningState, State, Twodo},
         update::{message::Message, read_data::get_tasks},
     },
-    Result,
 };
 
 use ratatui::DefaultTerminal;

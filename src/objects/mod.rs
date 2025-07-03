@@ -1,16 +1,10 @@
-use sqlx::prelude::FromRow;
+// region:    --- Modules
+mod task;
+mod project;
 
-#[derive(Debug, PartialEq, FromRow)]
-pub struct Task {
-    pub id: i64,
-    pub title: String,
-    pub description: String,
-    pub done: bool,
-}
+// -- Flatten
+pub use task::Task;
+pub use project::Project;
 
+// endregion: --- Modules
 
-#[derive(Debug, PartialEq, FromRow)]
-pub struct Project {
-    pub id: i64,
-    pub name: String,
-}

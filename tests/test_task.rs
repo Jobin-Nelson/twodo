@@ -1,7 +1,7 @@
 use clap::Parser;
 use twodo::{
     cli::{Item, TaskOp},
-    controller::list_task,
+    controller::delegater::list_task,
     objects::Task,
     Cli,
 };

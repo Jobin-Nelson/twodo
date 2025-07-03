@@ -1,10 +1,10 @@
 use crate::app::model::App;
 use ratatui::{
+    Frame,
     layout::Constraint,
     style::{Style, Stylize},
     text::Line,
-    widgets::{block::Position, Block, Borders, Row, Table},
-    Frame,
+    widgets::{Block, Borders, Row, Table, block::Position},
 };
 
 impl App {

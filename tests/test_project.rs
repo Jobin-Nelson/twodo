@@ -90,7 +90,11 @@ async fn test_delete_project() -> Result<()> {
     // -- Exec
     let project_id = 2;
 
-    common::exec_cli(&db, vec!["twodo", "project", "delete", &project_id.to_string()]).await?;
+    common::exec_cli(
+        &db,
+        vec!["twodo", "project", "delete", &project_id.to_string()],
+    )
+    .await?;
 
     // -- Check
     let task: Option<Project> = sqlx::query_as("SELECT * FROM projects WHERE name = ?1")

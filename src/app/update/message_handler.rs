@@ -1,10 +1,10 @@
 use crate::{
+    Result,
     app::{
         model::{App, RunningState},
         update::message::Message,
     },
-    controller::delegate_task_op,
-    Result,
+    controller::delegater::delegate_task_op,
 };
 
 impl App {
