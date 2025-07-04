@@ -1,14 +1,14 @@
 use crate::objects::{Project, Task};
 
 use crossterm::event::EventStream;
-use ratatui::widgets::{ListState, TableState};
+use ratatui::widgets::ListState;
 use sqlx::SqlitePool;
 use tui_textarea::TextArea;
 
 #[derive(Debug)]
 pub struct App {
     pub db: SqlitePool,
-    pub app_state: AppState,
+    pub mode: Mode,
     pub event_stream: EventStream,
     pub twodo: Twodo,
     pub popover: Popover,
@@ -16,12 +16,25 @@ pub struct App {
 }
 
 #[derive(Debug, PartialEq, Default)]
-pub enum AppState {
+pub struct Mode {
+    pub app_mode: AppMode,
+    pub add_task_mode: AddTaskMode,
+}
+
+#[derive(Debug, PartialEq, Default)]
+pub enum AppMode {
     #[default]
-    NormalTask,
+    FocusTask,
+    FocusProject,
     AddTask,
-    NormalProject,
-    CloseApp,
+    Quit,
+}
+
+#[derive(Debug, PartialEq, Default)]
+pub enum AddTaskMode {
+    #[default]
+    AddTitle,
+    AddDescription,
 }
 
 #[derive(Debug, Default)]
@@ -29,7 +42,7 @@ pub struct Popover {
     pub add_task: AddTask,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct AddTask {
     pub title: TextArea<'static>,
     pub description: TextArea<'static>,
@@ -43,6 +56,6 @@ pub struct Twodo {
 
 #[derive(Debug, Default)]
 pub struct State {
-    pub task_state: TableState,
+    pub task_state: ListState,
     pub project_state: ListState,
 }

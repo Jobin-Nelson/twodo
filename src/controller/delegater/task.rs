@@ -18,15 +18,16 @@ pub async fn delegate_task_op(db: &SqlitePool, op: TaskOp) -> Result<Message> {
 
 pub async fn add_task(db: &SqlitePool, add_arg: TaskAddArg) -> Result<Message> {
     sqlx::query(
-        "INSERT INTO tasks (title, description)
-        VALUES (?1, ?2)",
+        "INSERT INTO tasks (title, description, project_id)
+        VALUES (?1, ?2, ?3)",
     )
     .bind(add_arg.title)
     .bind(add_arg.description)
+    .bind(add_arg.project_id)
     .execute(db)
     .await?;
 
-    Ok(Message::Noop)
+    Ok(Message::ReloadTask)
 }
 
 pub async fn list_task<T: std::io::Write>(

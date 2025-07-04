@@ -9,9 +9,12 @@ pub enum Message {
     AddTaskCommit,
     AddTaskAbort,
     FocusTask,
+    FocusAddTaskTitle,
+    FocusAddTaskDescription,
     NextTask,
     PrevTask,
     TaskOp(cli::TaskOp),
+    ReloadTask,
 
     // Project messages
     FocusProject,

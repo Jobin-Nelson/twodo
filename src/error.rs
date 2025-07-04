@@ -9,6 +9,9 @@ pub enum Error {
     #[from(String, &String, &str)]
     Custom(String),
 
+    // Tui
+    MissingProjectId,
+
     // -- Externals
     #[from]
     Io(std::io::Error),

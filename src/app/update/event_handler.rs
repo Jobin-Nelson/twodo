@@ -1,9 +1,9 @@
 use crate::app::{
-    model::{App, AppState},
+    model::{AddTaskMode, App, AppMode},
     update::message::Message,
 };
 
-use crossterm::event::{Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
+use ratatui::crossterm::event::{Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 use futures::{FutureExt, StreamExt};
 use tokio::time::Interval;
 
@@ -27,17 +27,40 @@ impl App {
         }
     }
 
-    fn on_key_event(&self, key: KeyEvent) -> Message {
-        match self.app_state {
-            AppState::NormalTask => on_normal_task_key_event(key),
-            AppState::NormalProject => on_normal_project_task_key_event(key),
-            AppState::AddTask => on_add_task_key_event(key),
-            AppState::CloseApp => unreachable!(),
+    fn on_key_event(&mut self, key: KeyEvent) -> Message {
+        match self.mode.app_mode {
+            AppMode::FocusTask => on_focus_task_key_event(key),
+            AppMode::FocusProject => on_focus_project_task_key_event(key),
+            AppMode::AddTask => self.on_add_task_key_event(key),
+            AppMode::Quit => unreachable!(),
+        }
+    }
+
+    fn on_add_task_key_event(&mut self, key: KeyEvent) -> Message {
+        match (key.modifiers, key.code) {
+            (_, KeyCode::Esc)
+            | (KeyModifiers::CONTROL, KeyCode::Char('c') | KeyCode::Char('C')) => {
+                Message::AddTaskAbort
+            }
+            (KeyModifiers::CONTROL, KeyCode::Char(' ')) => Message::AddTaskCommit,
+
+            (_, KeyCode::Tab) => match self.mode.add_task_mode {
+                AddTaskMode::AddTitle => Message::FocusAddTaskDescription,
+                AddTaskMode::AddDescription => Message::FocusAddTaskTitle,
+            },
+
+            _ => {
+                match self.mode.add_task_mode {
+                    AddTaskMode::AddTitle => self.popover.add_task.title.input(key),
+                    AddTaskMode::AddDescription => self.popover.add_task.description.input(key),
+                };
+                Message::Noop
+            }
         }
     }
 }
 
-fn on_normal_task_key_event(key: KeyEvent) -> Message {
+fn on_focus_task_key_event(key: KeyEvent) -> Message {
     match (key.modifiers, key.code) {
         // Task navigation
         (_, KeyCode::Char('j')) => Message::NextTask,
@@ -51,7 +74,7 @@ fn on_normal_task_key_event(key: KeyEvent) -> Message {
     }
 }
 
-fn on_normal_project_task_key_event(key: KeyEvent) -> Message {
+fn on_focus_project_task_key_event(key: KeyEvent) -> Message {
     match (key.modifiers, key.code) {
         // Task navigation
         (_, KeyCode::Char('j')) => Message::NextProject,
@@ -60,17 +83,6 @@ fn on_normal_project_task_key_event(key: KeyEvent) -> Message {
 
         // Other key handlers
         _ => on_global_key_event(key),
-    }
-}
-
-fn on_add_task_key_event(key: KeyEvent) -> Message {
-    match (key.modifiers, key.code) {
-        (_, KeyCode::Esc) | (KeyModifiers::CONTROL, KeyCode::Char('c') | KeyCode::Char('C')) => {
-            Message::AddTaskAbort
-        },
-        (KeyModifiers::CONTROL, KeyCode::Enter) => Message::AddTaskCommit,
-
-        _ => Message::Noop,
     }
 }
 
