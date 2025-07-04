@@ -1,6 +1,6 @@
 use crate::{
     app::{
-        model::{App, AppState, State},
+        model::{App, AppState},
         update::{message::Message, read_data::get_twodo},
     },
     Result,
@@ -15,13 +15,13 @@ impl App {
 
     pub async fn new(db: SqlitePool) -> Result<Self> {
         let twodo = get_twodo(&db).await?;
-        let state = State::default();
         Ok(Self {
             db,
             app_state: Default::default(),
             event_stream: Default::default(),
             twodo,
-            state,
+            state: Default::default(),
+            popover: Default::default(),
         })
     }
 

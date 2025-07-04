@@ -15,16 +15,31 @@ impl App {
 
     pub async fn update(&mut self, action: Message) -> Result<Message> {
         match action {
+            Message::Noop => unreachable!(),
             Message::Quit => self.quit(),
+            // Task messages
             Message::TaskOp(op) => delegate_task_op(&self.db, op).await,
+            Message::AddTaskBegin => return_noop(|| self.app_state = AppState::AddTask),
+            Message::AddTaskCommit => self.add_task(),
+            Message::AddTaskAbort => return_noop(|| self.app_state = AppState::NormalTask),
             Message::NextTask => return_noop(|| self.state.task_state.select_next()),
             Message::PrevTask => return_noop(|| self.state.task_state.select_previous()),
-            Message::FocusProject => return_noop(|| self.app_state = AppState::NormalProject),
             Message::FocusTask => return_noop(|| self.app_state = AppState::NormalTask),
+
+            // Project messages
             Message::NextProject => return_noop(|| self.state.project_state.select_next()),
             Message::PrevProject => return_noop(|| self.state.project_state.select_previous()),
-            Message::Noop => unreachable!(),
+            Message::FocusProject => return_noop(|| self.app_state = AppState::NormalProject),
         }
+    }
+
+    fn add_task(&mut self) -> Result<Message> {
+        todo!();
+        // Ok(Message::TaskOp(TaskOp::Add(TaskAddArg {
+        //     title: todo!(),
+        //     description: todo!(),
+        //     project_id: todo!(),
+        // })))
     }
 }
 

@@ -27,49 +27,62 @@ impl App {
         }
     }
 
-    fn on_key_event(&mut self, key: KeyEvent) -> Message {
+    fn on_key_event(&self, key: KeyEvent) -> Message {
         match self.app_state {
-            AppState::NormalTask => self.on_normal_task_key_event(key),
-            AppState::NormalProject => self.on_normal_project_task_key_event(key),
+            AppState::NormalTask => on_normal_task_key_event(key),
+            AppState::NormalProject => on_normal_project_task_key_event(key),
+            AppState::AddTask => on_add_task_key_event(key),
             AppState::CloseApp => unreachable!(),
         }
     }
+}
 
-    fn on_normal_task_key_event(&mut self, key: KeyEvent) -> Message {
-        match (key.modifiers, key.code) {
-            // Task navigation
-            (_, KeyCode::Char('j')) => Message::NextTask,
-            (_, KeyCode::Char('k')) => Message::PrevTask,
+fn on_normal_task_key_event(key: KeyEvent) -> Message {
+    match (key.modifiers, key.code) {
+        // Task navigation
+        (_, KeyCode::Char('j')) => Message::NextTask,
+        (_, KeyCode::Char('k')) => Message::PrevTask,
+        (_, KeyCode::Char('i')) | (_, KeyCode::Char('a')) => Message::AddTaskBegin,
 
-            (_, KeyCode::Tab) => Message::FocusProject,
+        (_, KeyCode::Tab) => Message::FocusProject,
 
-            // Other key handlers
-            _ => self.on_global_key_event(key),
-        }
+        // Other key handlers
+        _ => on_global_key_event(key),
     }
+}
 
-    fn on_normal_project_task_key_event(&mut self, key: KeyEvent) -> Message {
-        match (key.modifiers, key.code) {
-            // Task navigation
-            (_, KeyCode::Char('j')) => Message::NextProject,
-            (_, KeyCode::Char('k')) => Message::PrevProject,
-            (_, KeyCode::Tab) => Message::FocusTask,
+fn on_normal_project_task_key_event(key: KeyEvent) -> Message {
+    match (key.modifiers, key.code) {
+        // Task navigation
+        (_, KeyCode::Char('j')) => Message::NextProject,
+        (_, KeyCode::Char('k')) => Message::PrevProject,
+        (_, KeyCode::Tab) => Message::FocusTask,
 
-            // Other key handlers
-            _ => self.on_global_key_event(key),
-        }
+        // Other key handlers
+        _ => on_global_key_event(key),
     }
+}
 
-    fn on_global_key_event(&mut self, key: KeyEvent) -> Message {
-        match (key.modifiers, key.code) {
-            // Quit on Ctrl-C or ESC or q
-            (_, KeyCode::Esc | KeyCode::Char('q'))
-            | (KeyModifiers::CONTROL, KeyCode::Char('c') | KeyCode::Char('C')) => Message::Quit,
+fn on_add_task_key_event(key: KeyEvent) -> Message {
+    match (key.modifiers, key.code) {
+        (_, KeyCode::Esc) | (KeyModifiers::CONTROL, KeyCode::Char('c') | KeyCode::Char('C')) => {
+            Message::AddTaskAbort
+        },
+        (KeyModifiers::CONTROL, KeyCode::Enter) => Message::AddTaskCommit,
 
-            // Navigation
-            (_, KeyCode::Char('1')) => Message::FocusProject,
-            (_, KeyCode::Char('2')) => Message::FocusTask,
-            _ => Message::Noop,
-        }
+        _ => Message::Noop,
+    }
+}
+
+fn on_global_key_event(key: KeyEvent) -> Message {
+    match (key.modifiers, key.code) {
+        // Quit on Ctrl-C or ESC or q
+        (_, KeyCode::Esc | KeyCode::Char('q'))
+        | (KeyModifiers::CONTROL, KeyCode::Char('c') | KeyCode::Char('C')) => Message::Quit,
+
+        // Navigation
+        (_, KeyCode::Char('1')) => Message::FocusProject,
+        (_, KeyCode::Char('2')) => Message::FocusTask,
+        _ => Message::Noop,
     }
 }
