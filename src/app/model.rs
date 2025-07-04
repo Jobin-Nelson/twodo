@@ -7,17 +7,18 @@ use sqlx::SqlitePool;
 #[derive(Debug)]
 pub struct App {
     pub db: SqlitePool,
-    pub running: RunningState,
+    pub app_state: AppState,
     pub event_stream: EventStream,
     pub twodo: Twodo,
     pub state: State,
 }
 
 #[derive(Debug, PartialEq, Default)]
-pub enum RunningState {
+pub enum AppState {
     #[default]
-    Running,
-    Done,
+    NormalTask,
+    NormalProject,
+    CloseApp,
 }
 
 #[derive(Debug)]

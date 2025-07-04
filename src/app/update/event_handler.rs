@@ -1,4 +1,7 @@
-use crate::app::{model::App, update::message::Message};
+use crate::app::{
+    model::{App, AppState},
+    update::message::Message,
+};
 
 use crossterm::event::{Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 use futures::{FutureExt, StreamExt};
@@ -25,16 +28,47 @@ impl App {
     }
 
     fn on_key_event(&mut self, key: KeyEvent) -> Message {
+        match self.app_state {
+            AppState::NormalTask => self.on_normal_task_key_event(key),
+            AppState::NormalProject => self.on_normal_project_task_key_event(key),
+            AppState::CloseApp => unreachable!(),
+        }
+    }
+
+    fn on_normal_task_key_event(&mut self, key: KeyEvent) -> Message {
+        match (key.modifiers, key.code) {
+            // Task navigation
+            (_, KeyCode::Char('j')) => Message::NextTask,
+            (_, KeyCode::Char('k')) => Message::PrevTask,
+
+            (_, KeyCode::Tab) => Message::FocusProject,
+
+            // Other key handlers
+            _ => self.on_global_key_event(key),
+        }
+    }
+
+    fn on_normal_project_task_key_event(&mut self, key: KeyEvent) -> Message {
+        match (key.modifiers, key.code) {
+            // Task navigation
+            (_, KeyCode::Char('j')) => Message::NextProject,
+            (_, KeyCode::Char('k')) => Message::PrevProject,
+            (_, KeyCode::Tab) => Message::FocusTask,
+
+            // Other key handlers
+            _ => self.on_global_key_event(key),
+        }
+    }
+
+    fn on_global_key_event(&mut self, key: KeyEvent) -> Message {
         match (key.modifiers, key.code) {
             // Quit on Ctrl-C or ESC or q
             (_, KeyCode::Esc | KeyCode::Char('q'))
             | (KeyModifiers::CONTROL, KeyCode::Char('c') | KeyCode::Char('C')) => Message::Quit,
 
-            // Task navigation
-            (_, KeyCode::Char('j')) => Message::NextTask,
-            (_, KeyCode::Char('k')) => Message::PrevTask,
-
-            // Other key handlers
+            // Navigation
+            (_, KeyCode::Char('1')) => Message::FocusProject,
+            (_, KeyCode::Char('2')) => Message::FocusTask,
             _ => Message::Noop,
         }
     }

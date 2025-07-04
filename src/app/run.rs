@@ -1,6 +1,6 @@
 use crate::{
     app::{
-        model::{App, RunningState, State},
+        model::{App, AppState, State},
         update::{message::Message, read_data::get_twodo},
     },
     Result,
@@ -18,7 +18,7 @@ impl App {
         let state = State::default();
         Ok(Self {
             db,
-            running: Default::default(),
+            app_state: Default::default(),
             event_stream: Default::default(),
             twodo,
             state,
@@ -31,7 +31,7 @@ impl App {
         let period = Duration::from_secs_f32(1.0 / Self::FRAMES_PER_SECOND);
         let mut interval = tokio::time::interval(period);
 
-        while self.running != RunningState::Done {
+        while self.app_state != AppState::CloseApp {
             terminal.draw(|frame| frame.render_widget(&mut self, frame.area()))?;
 
             let mut action = self.handle_event(&mut interval).await;

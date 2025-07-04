@@ -1,15 +1,15 @@
 use crate::{
-    Result,
     app::{
-        model::{App, RunningState},
+        model::{App, AppState},
         update::message::Message,
     },
     controller::delegater::delegate_task_op,
+    Result,
 };
 
 impl App {
     fn quit(&mut self) -> Result<Message> {
-        self.running = RunningState::Done;
+        self.app_state = AppState::CloseApp;
         Ok(Message::Noop)
     }
 
@@ -17,17 +17,18 @@ impl App {
         match action {
             Message::Quit => self.quit(),
             Message::TaskOp(op) => delegate_task_op(&self.db, op).await,
-            Message::NextTask => {
-                self.state.task_state.select_next();
-                Ok(Message::Noop)
-            }
-            Message::PrevTask => {
-                self.state.task_state.select_previous();
-                Ok(Message::Noop)
-            }
-
-            // Update will never be called with Noop
+            Message::NextTask => return_noop(|| self.state.task_state.select_next()),
+            Message::PrevTask => return_noop(|| self.state.task_state.select_previous()),
+            Message::FocusProject => return_noop(|| self.app_state = AppState::NormalProject),
+            Message::FocusTask => return_noop(|| self.app_state = AppState::NormalTask),
+            Message::NextProject => return_noop(|| self.state.project_state.select_next()),
+            Message::PrevProject => return_noop(|| self.state.project_state.select_previous()),
             Message::Noop => unreachable!(),
         }
     }
+}
+
+fn return_noop<F: FnMut()>(mut f: F) -> Result<Message> {
+    f();
+    Ok(Message::Noop)
 }
