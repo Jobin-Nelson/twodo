@@ -1,4 +1,4 @@
-use std::collections::{HashMap, VecDeque};
+use std::collections::HashMap;
 
 use graph_builder::{DirectedCsrGraph, DirectedNeighbors, GraphBuilder};
 
@@ -47,12 +47,12 @@ pub fn reorder_tasks(tasks: Vec<Task>) -> Vec<Task> {
     let mut reordered_task_ids = Vec::new();
     for root_task in root_tasks {
         // pre order traversal
-        let mut queue = VecDeque::new();
-        queue.push_back(root_task.id);
-        while let Some(task_id) = queue.pop_front() {
+        let mut queue = Vec::new();
+        queue.push(root_task.id);
+        while let Some(task_id) = queue.pop() {
             reordered_task_ids.push(task_id);
             for neighbor in graph.out_neighbors(task_id) {
-                queue.push_front(*neighbor);
+                queue.push(*neighbor);
             }
         }
     }
