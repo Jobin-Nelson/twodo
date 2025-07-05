@@ -32,6 +32,8 @@ impl App {
             AppMode::FocusTask => on_focus_task_key_event(key),
             AppMode::FocusProject => on_focus_project_task_key_event(key),
             AppMode::AddTask => self.on_add_task_key_event(key),
+            AppMode::AddSubTask => self.on_add_task_key_event(key),
+            AppMode::AddSiblingTask => self.on_add_task_key_event(key),
             AppMode::Quit => unreachable!(),
         }
     }
@@ -65,7 +67,9 @@ fn on_focus_task_key_event(key: KeyEvent) -> Message {
         // Task navigation
         (_, KeyCode::Char('j')) => Message::SelectNextTask,
         (_, KeyCode::Char('k')) => Message::SelectPrevTask,
-        (_, KeyCode::Char('i')) | (_, KeyCode::Char('a')) => Message::AddTaskBegin,
+        (_, KeyCode::Char('i')) => Message::AddTaskBegin,
+        (_, KeyCode::Char('s')) => Message::AddSubTaskBegin,
+        (_, KeyCode::Char('a')) => Message::AddSiblingTaskBegin,
         (_, KeyCode::Char('r')) => Message::ReloadTask,
         (_, KeyCode::Char('x')) => Message::DeleteTask,
         (_, KeyCode::Char(' ')) => Message::ToggleTaskStatus,

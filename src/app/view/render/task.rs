@@ -20,7 +20,8 @@ impl App {
             .iter()
             .map(|t| {
                 let done = if t.done { "󰄳 " } else { "󰄰 " };
-                ListItem::new(format!("{} {}", done, t.title))
+                let depth = "  ".repeat(t.depth as usize);
+                ListItem::new(format!("{} {} {}", depth, done, t.title))
             })
             .collect::<Vec<_>>();
 

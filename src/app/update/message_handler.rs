@@ -10,7 +10,6 @@ use crate::{
 
 use super::support::reorder_tasks;
 
-
 impl App {
     fn quit(&mut self) -> Result<Message> {
         self.mode.app_mode = AppMode::Quit;
@@ -24,7 +23,9 @@ impl App {
             // Task messages
             Message::ReloadTask => self.reload_task().await,
             Message::TaskOp(op) => delegate_task_op(&self.db, op).await,
-            Message::AddTaskBegin => self.add_task_begin(),
+            Message::AddTaskBegin => self.add_task_begin(AppMode::AddTask),
+            Message::AddSubTaskBegin => self.add_task_begin(AppMode::AddSubTask),
+            Message::AddSiblingTaskBegin => self.add_task_begin(AppMode::AddSiblingTask),
             Message::AddTaskCommit => self.add_task_commit(),
             Message::AddTaskAbort => return_noop(|| self.mode.app_mode = AppMode::FocusTask),
             Message::FocusAddTaskTitle => {
@@ -78,8 +79,8 @@ impl App {
         Ok(Message::Noop)
     }
 
-    fn add_task_begin(&mut self) -> Result<Message> {
-        self.mode.app_mode = AppMode::AddTask;
+    fn add_task_begin(&mut self, app_mode: AppMode) -> Result<Message> {
+        self.mode.app_mode = app_mode;
         Ok(Message::FocusAddTaskTitle)
     }
 
@@ -111,7 +112,22 @@ impl App {
     }
 
     fn add_task_commit(&mut self) -> Result<Message> {
+        let parent_id = match self.mode.app_mode {
+            AppMode::AddSubTask => self
+                .state
+                .task_state
+                .selected()
+                .map(|i| self.twodo.tasks[i].id),
+            AppMode::AddSiblingTask => self
+                .state
+                .task_state
+                .selected()
+                .and_then(|i| self.twodo.tasks[i].parent_id),
+            _ => None,
+        };
+
         self.mode.app_mode = AppMode::FocusTask;
+
         let project_id = self
             .state
             .project_state
@@ -143,7 +159,7 @@ impl App {
             title,
             description,
             project_id,
-            parent_id: None,
+            parent_id,
         })))
     }
 

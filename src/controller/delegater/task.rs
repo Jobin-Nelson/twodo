@@ -18,17 +18,24 @@ pub async fn delegate_task_op(db: &SqlitePool, op: TaskOp) -> Result<Message> {
 }
 
 async fn add_task(db: &SqlitePool, add_arg: TaskAddArg) -> Result<Message> {
-    let task_id: i64 = sqlx::query_scalar(
+    let query_str = if add_arg.parent_id.is_some() {
+        "INSERT INTO tasks (title, description, project_id, parent_id, depth)
+        SELECT ?1, ?2, project_id, id as parent_id, depth + 1 as depth
+        FROM tasks
+        WHERE id = ?4
+        RETURNING id"
+    } else {
         "INSERT INTO tasks (title, description, project_id, parent_id)
         VALUES (?1, ?2, ?3, ?4)
-        RETURNING id",
-    )
-    .bind(add_arg.title)
-    .bind(add_arg.description)
-    .bind(add_arg.project_id)
-    .bind(add_arg.parent_id)
-    .fetch_one(db)
-    .await?;
+        RETURNING id"
+    };
+    let task_id: i64 = sqlx::query_scalar(query_str)
+        .bind(add_arg.title)
+        .bind(add_arg.description)
+        .bind(add_arg.project_id)
+        .bind(add_arg.parent_id)
+        .fetch_one(db)
+        .await?;
 
     if let Some(parent_id) = add_arg.parent_id {
         sqlx::query(
@@ -303,6 +310,39 @@ mod tests {
                 .await?;
 
             assert_eq!(None, task);
+        }
+        Ok(())
+    }
+    #[tokio::test]
+    async fn test_task_depth() -> Result<()> {
+        // -- Setup & Fixtures
+        let db = init_db().await?;
+        // -- Exec
+        // (parent_id, task_title, depth)
+        let tasks = [
+            (None, "parent task", 0),
+            (Some(1), "child task", 1),
+            (Some(2), "grand child task", 2),
+            (None, "another parent task", 0),
+        ];
+        for (parent_id, task_title, _depth) in tasks {
+            let op = TaskOp::Add(TaskAddArg {
+                title: task_title.to_string(),
+                description: None,
+                project_id: 1,
+                parent_id,
+            });
+            delegate_task_op(&db, op).await.unwrap();
+        }
+
+        // -- Check
+        for (_parent_id, task_title, depth) in tasks {
+            let task: Task = sqlx::query_as("SELECT * FROM tasks WHERE title = ?1")
+                .bind(task_title)
+                .fetch_one(&db)
+                .await?;
+
+            assert_eq!(depth, task.depth);
         }
         Ok(())
     }

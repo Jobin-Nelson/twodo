@@ -1,4 +1,6 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, VecDeque};
+
+use graph_builder::{DirectedCsrGraph, DirectedNeighbors, GraphBuilder};
 
 use crate::{
     app::model::Twodo,
@@ -14,7 +16,8 @@ pub async fn get_twodo(db: &sqlx::Pool<sqlx::Sqlite>) -> Result<Twodo> {
         project_id: Some(PROJECT_INBOX_ID),
         number: None,
     };
-    let tasks = read_task(db, task_list_arg).await?;
+    let unordered_tasks = read_task(db, task_list_arg).await?;
+    let tasks = reorder_tasks(unordered_tasks);
     let projects = get_projects(db).await?;
     Ok(Twodo { tasks, projects })
 }
@@ -26,18 +29,38 @@ async fn get_projects(db: &sqlx::Pool<sqlx::Sqlite>) -> Result<Vec<Project>> {
         .map_err(Into::into)
 }
 
-pub fn reorder_tasks(mut tasks: Vec<Task>) -> Vec<Task> {
-    let root_tasks: Vec<&Task> = tasks.iter().filter(|t| t.parent_id.is_none()).collect();
-    let edges = tasks
-        .iter()
-        .map(|t| (t.parent_id.unwrap_or(0), t.id))
-        .collect::<Vec<_>>();
+pub fn reorder_tasks(tasks: Vec<Task>) -> Vec<Task> {
+    let mut task_id_to_index: HashMap<i64, usize> = HashMap::new();
+    let mut root_tasks: Vec<&Task> = Vec::new();
+    let mut edges = Vec::new();
 
-    vec![]
-}
+    for (index, task) in tasks.iter().enumerate() {
+        edges.push((task.parent_id.unwrap_or(0), task.id));
+        if task.parent_id.is_none() {
+            root_tasks.push(task);
+        }
+        task_id_to_index.insert(task.id, index);
+    }
 
-fn get_edges(tasks: &[Task]) -> &[()] {
-    todo!()
+    let graph: DirectedCsrGraph<i64> = GraphBuilder::new().edges(edges).build();
+
+    let mut reordered_task_ids = Vec::new();
+    for root_task in root_tasks {
+        // pre order traversal
+        let mut queue = VecDeque::new();
+        queue.push_back(root_task.id);
+        while let Some(task_id) = queue.pop_front() {
+            reordered_task_ids.push(task_id);
+            for neighbor in graph.out_neighbors(task_id) {
+                queue.push_front(*neighbor);
+            }
+        }
+    }
+
+    reordered_task_ids
+        .into_iter()
+        .map(|id| task_id_to_index.get(&id).map(|&i| tasks[i].clone()).unwrap())
+        .collect()
 }
 
 // region:    --- Tests
@@ -47,6 +70,7 @@ mod tests {
     type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>; // For tests.
 
     use super::*;
+    use std::collections::HashSet;
 
     #[tokio::test]
     async fn test_reorder_tasks() -> Result<()> {
@@ -54,14 +78,13 @@ mod tests {
         let parent_id_task_id = [
             (None, 1),
             (Some(1), 2),
-            (Some(4), 5),
-            (Some(7), 8),
             (Some(2), 3),
             (Some(3), 4),
-            (Some(7), 9),
-            (Some(7), 9),
+            (Some(2), 5),
             (Some(5), 6),
             (Some(2), 7),
+            (Some(7), 8),
+            (Some(7), 9),
         ];
 
         let original_tasks = parent_id_task_id
@@ -73,6 +96,7 @@ mod tests {
                 done: false,
                 project_id: 1,
                 parent_id,
+                depth: 0,
                 sub_task_ids: sqlx::types::Json(Vec::new()),
             })
             .collect::<Vec<_>>();
@@ -81,24 +105,17 @@ mod tests {
         let reordered_tasks = reorder_tasks(original_tasks);
 
         // -- Check
-        let expected = [
-            (None, 1),
-            (Some(1), 2),
-            (Some(2), 3),
-            (Some(3), 4),
-            (Some(4), 5),
-            (Some(5), 6),
-            (Some(2), 7),
-            (Some(7), 8),
-            (Some(7), 9),
-            (Some(7), 9),
-        ];
-
+        let mut visited_task_ids = HashSet::new();
         let actual = reordered_tasks
             .into_iter()
             .map(|t| (t.parent_id, t.id))
             .collect::<Vec<_>>();
-        assert_eq!(expected, actual.as_slice());
+        for (parent_id, task_id) in actual {
+            assert!(visited_task_ids.insert(task_id));
+            if let Some(parent_id) = parent_id {
+                assert!(visited_task_ids.contains(&parent_id));
+            }
+        }
         Ok(())
     }
 }

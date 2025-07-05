@@ -1,10 +1,13 @@
-use crate::app::{model::{AddTaskMode, App, AppMode}, view::support::{focus_textarea, unfocus_textarea}};
+use crate::app::{
+    model::{AddTaskMode, App, AppMode},
+    view::support::{focus_textarea, unfocus_textarea},
+};
 use ratatui::{layout::Rect, prelude::Buffer, widgets::Widget};
 
 impl App {
     pub(super) fn render_popup(&mut self, area: Rect, buf: &mut Buffer) {
         match self.mode.app_mode {
-            AppMode::AddTask => self.render_add_task(area, buf),
+            AppMode::AddTask | AppMode::AddSubTask | AppMode::AddSiblingTask => self.render_add_task(area, buf),
             _ => {}
         }
     }

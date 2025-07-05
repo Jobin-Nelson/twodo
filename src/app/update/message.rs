@@ -6,6 +6,8 @@ pub enum Message {
     Quit,
     // Task messages
     AddTaskBegin,
+    AddSubTaskBegin,
+    AddSiblingTaskBegin,
     AddTaskCommit,
     AddTaskAbort,
     FocusTask,

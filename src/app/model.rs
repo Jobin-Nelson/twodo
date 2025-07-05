@@ -27,6 +27,8 @@ pub enum AppMode {
     FocusTask,
     FocusProject,
     AddTask,
+    AddSubTask,
+    AddSiblingTask,
     Quit,
 }
 
