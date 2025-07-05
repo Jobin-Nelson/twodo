@@ -45,7 +45,7 @@ async fn add_task(db: &SqlitePool, add_arg: TaskAddArg) -> Result<Message> {
     Ok(Message::ReloadTask)
 }
 
-async fn read_task(db: &SqlitePool, list_arg: TaskListArg) -> Result<Vec<Task>> {
+pub async fn read_task(db: &SqlitePool, list_arg: TaskListArg) -> Result<Vec<Task>> {
     let mut query_str = "SELECT * FROM tasks".to_string();
     let mut where_clauses = Vec::new();
     let mut args = Vec::new();

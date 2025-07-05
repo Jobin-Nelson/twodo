@@ -41,3 +41,9 @@ impl Default for AddTask {
         Self { title, description }
     }
 }
+
+impl AddTask {
+    pub fn clear(&mut self) {
+        *self = Self::default();
+    }
+}

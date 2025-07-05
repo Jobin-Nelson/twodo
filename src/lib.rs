@@ -9,6 +9,8 @@ pub use error::{Error, Result};
 pub use run::run;
 
 /// Pubilc modules
+pub(crate) mod constants;
+
 pub mod cli;
 pub mod controller;
 pub mod error;

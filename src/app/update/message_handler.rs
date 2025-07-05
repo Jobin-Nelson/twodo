@@ -3,12 +3,13 @@ use crate::{
         model::{AddTaskMode, App, AppMode},
         update::message::Message,
     },
-    cli::{TaskAddArg, TaskDeleteArg, TaskDoneArg, TaskOp},
-    controller::delegater::delegate_task_op,
+    cli::{TaskAddArg, TaskDeleteArg, TaskDoneArg, TaskListArg, TaskOp},
+    controller::delegater::{delegate_task_op, read_task},
     Error, Result,
 };
 
-use super::read_data::get_tasks_by_project;
+use super::support::reorder_tasks;
+
 
 impl App {
     fn quit(&mut self) -> Result<Message> {
@@ -136,6 +137,8 @@ impl App {
         if title.is_empty() {
             return Ok(Message::Noop);
         }
+
+        self.popover.add_task.clear();
         Ok(Message::TaskOp(TaskOp::Add(TaskAddArg {
             title,
             description,
@@ -150,10 +153,19 @@ impl App {
             .project_state
             .selected()
             .and_then(|i| self.twodo.projects.get(i))
-            .map(|p| p.id)
-            .ok_or(Error::MissingProjectId)?;
+            .map(|p| p.id);
 
-        self.twodo.tasks = get_tasks_by_project(&self.db, project_id).await?;
+        if project_id.is_none() {
+            return Err(Error::MissingProjectId);
+        }
+
+        let task_list_arg = TaskListArg {
+            project_id,
+            number: None,
+        };
+
+        let tasks = read_task(&self.db, task_list_arg).await?;
+        self.twodo.tasks = reorder_tasks(tasks);
 
         Ok(Message::Noop)
     }
