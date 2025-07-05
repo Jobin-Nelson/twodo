@@ -63,9 +63,14 @@ impl App {
 fn on_focus_task_key_event(key: KeyEvent) -> Message {
     match (key.modifiers, key.code) {
         // Task navigation
-        (_, KeyCode::Char('j')) => Message::NextTask,
-        (_, KeyCode::Char('k')) => Message::PrevTask,
+        (_, KeyCode::Char('j')) => Message::SelectNextTask,
+        (_, KeyCode::Char('k')) => Message::SelectPrevTask,
         (_, KeyCode::Char('i')) | (_, KeyCode::Char('a')) => Message::AddTaskBegin,
+        (_, KeyCode::Char('r')) => Message::ReloadTask,
+        (_, KeyCode::Char('x')) => Message::DeleteTask,
+        (_, KeyCode::Char(' ')) => Message::ToggleTaskStatus,
+        (_, KeyCode::Char('g')) => Message::SelectFirstTask,
+        (_, KeyCode::Char('G')) => Message::SelectLastTask,
 
         (_, KeyCode::Tab) => Message::FocusProject,
 
@@ -77,8 +82,10 @@ fn on_focus_task_key_event(key: KeyEvent) -> Message {
 fn on_focus_project_task_key_event(key: KeyEvent) -> Message {
     match (key.modifiers, key.code) {
         // Task navigation
-        (_, KeyCode::Char('j')) => Message::NextProject,
-        (_, KeyCode::Char('k')) => Message::PrevProject,
+        (_, KeyCode::Char('j')) => Message::SelectNextProject,
+        (_, KeyCode::Char('k')) => Message::SelectPrevProject,
+        (_, KeyCode::Char('g')) => Message::SelectFirstProject,
+        (_, KeyCode::Char('G')) => Message::SelectLastProject,
         (_, KeyCode::Tab) => Message::FocusTask,
 
         // Other key handlers

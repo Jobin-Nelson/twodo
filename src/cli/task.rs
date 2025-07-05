@@ -13,6 +13,9 @@ pub enum TaskOp {
     /// Complete a task
     Done(TaskDoneArg),
 
+    /// Complete a task
+    UnDone(TaskDoneArg),
+
     /// Edit a task
     Edit(TaskEditArg),
 

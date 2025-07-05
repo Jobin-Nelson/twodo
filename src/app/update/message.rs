@@ -11,13 +11,19 @@ pub enum Message {
     FocusTask,
     FocusAddTaskTitle,
     FocusAddTaskDescription,
-    NextTask,
-    PrevTask,
     TaskOp(cli::TaskOp),
     ReloadTask,
+    DeleteTask,
+    ToggleTaskStatus,
+    SelectNextTask,
+    SelectPrevTask,
+    SelectFirstTask,
+    SelectLastTask,
 
     // Project messages
     FocusProject,
-    NextProject,
-    PrevProject,
+    SelectNextProject,
+    SelectPrevProject,
+    SelectFirstProject,
+    SelectLastProject,
 }

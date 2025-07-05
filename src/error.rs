@@ -11,6 +11,7 @@ pub enum Error {
 
     // Tui
     MissingProjectId,
+    MissingTaskId,
 
     // -- Externals
     #[from]

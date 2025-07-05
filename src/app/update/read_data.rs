@@ -11,7 +11,7 @@ pub async fn get_twodo(db: &sqlx::Pool<sqlx::Sqlite>) -> Result<Twodo> {
 }
 
 pub(super) async fn get_tasks_by_project(db: &sqlx::Pool<sqlx::Sqlite>, project_id: i64) -> Result<Vec<Task>> {
-    sqlx::query_as::<_, Task>("SELECT * FROM tasks WHERE done = 0 AND project_id = ?1")
+    sqlx::query_as::<_, Task>("SELECT * FROM tasks WHERE project_id = ?1")
         .bind(project_id)
         .fetch_all(db)
         .await
