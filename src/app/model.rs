@@ -13,9 +13,10 @@ pub struct App {
     pub twodo: Twodo,
     pub popover: Popover,
     pub state: State,
+    pub view_data: ViewData,
 }
 
-#[derive(Debug, PartialEq, Default)]
+#[derive(Debug, Default)]
 pub struct Mode {
     pub app_mode: AppMode,
     pub add_task_mode: AddTaskMode,
@@ -30,6 +31,11 @@ pub enum AppMode {
     AddSubTask,
     AddSiblingTask,
     Quit,
+}
+
+#[derive(Debug, Default)]
+pub struct ViewData {
+    pub task_depth: Vec<usize>,
 }
 
 #[derive(Debug, PartialEq, Default)]

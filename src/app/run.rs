@@ -10,11 +10,14 @@ use ratatui::DefaultTerminal;
 use sqlx::SqlitePool;
 use std::time::Duration;
 
+use super::model::ViewData;
+
 impl App {
     const FRAMES_PER_SECOND: f32 = 30.0;
 
     pub async fn new(db: SqlitePool) -> Result<Self> {
-        let twodo = get_twodo(&db).await?;
+        let (twodo, task_depth) = get_twodo(&db).await?;
+        let view_data = ViewData { task_depth };
         Ok(Self {
             db,
             mode: Default::default(),
@@ -22,6 +25,7 @@ impl App {
             twodo,
             state: Default::default(),
             popover: Default::default(),
+            view_data,
         })
     }
 

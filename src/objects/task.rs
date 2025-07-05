@@ -10,6 +10,5 @@ pub struct Task {
     pub project_id: i64,
     pub parent_id: Option<i64>,
     pub sub_task_ids: sqlx::types::Json<Vec<i64>>,
-    pub depth: i64,
 }
 

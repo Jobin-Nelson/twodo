@@ -9,7 +9,6 @@ CREATE TABLE IF NOT EXISTS tasks (
   done INTEGER NOT NULL DEFAULT false,
   project_id INTEGER NOT NULL DEFAULT 1,
   parent_id INTEGER,
-  depth INTEGER NOT NULL DEFAULT 0,
   sub_task_ids TEXT NOT NULL DEFAULT '[]',
   FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE
 ) STRICT;

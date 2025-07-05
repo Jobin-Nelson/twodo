@@ -30,11 +30,13 @@ impl Default for AddTask {
     fn default() -> Self {
         let mut title = TextArea::default();
         title.set_cursor_style(Style::default());
+        title.set_cursor_line_style(Style::default());
         title.set_block(Block::bordered().title_top(Line::from(" Title ").centered().bold()));
         focus_textarea(&mut title);
 
         let mut description = TextArea::default();
         description.set_cursor_style(Style::default());
+        description.set_cursor_line_style(Style::default());
         description
             .set_block(Block::bordered().title_top(Line::from(" Description ").centered().bold()));
 

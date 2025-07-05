@@ -18,9 +18,10 @@ impl App {
             .twodo
             .tasks
             .iter()
-            .map(|t| {
+            .zip(self.view_data.task_depth.iter())
+            .map(|(t, &d)| {
                 let done = if t.done { "󰄳 " } else { "󰄰 " };
-                let depth = "  ".repeat(t.depth as usize);
+                let depth = "  ".repeat(d);
                 ListItem::new(format!("{} {} {}", depth, done, t.title))
             })
             .collect::<Vec<_>>();

@@ -9,15 +9,15 @@ use crate::{
     Result,
 };
 
-pub async fn get_twodo(db: &sqlx::Pool<sqlx::Sqlite>) -> Result<Twodo> {
+pub async fn get_twodo(db: &sqlx::Pool<sqlx::Sqlite>) -> Result<(Twodo, Vec<usize>)> {
     let task_list_arg = TaskListArg {
         project_id: Some(PROJECT_INBOX_ID),
         number: None,
     };
     let unordered_tasks = read_task(db, task_list_arg).await?;
-    let tasks = reorder_tasks(unordered_tasks);
+    let (tasks, task_depth) = reorder_tasks(unordered_tasks);
     let projects = get_projects(db).await?;
-    Ok(Twodo { tasks, projects })
+    Ok((Twodo { tasks, projects }, task_depth))
 }
 
 async fn get_projects(db: &sqlx::Pool<sqlx::Sqlite>) -> Result<Vec<Project>> {
@@ -27,7 +27,7 @@ async fn get_projects(db: &sqlx::Pool<sqlx::Sqlite>) -> Result<Vec<Project>> {
         .map_err(Into::into)
 }
 
-pub fn reorder_tasks(tasks: Vec<Task>) -> Vec<Task> {
+pub fn reorder_tasks(tasks: Vec<Task>) -> (Vec<Task>, Vec<usize>) {
     let mut task_id_to_index: HashMap<i64, usize> = HashMap::new();
     let mut parent_to_children: HashMap<Option<i64>, Vec<i64>> = HashMap::new();
 
@@ -45,23 +45,26 @@ pub fn reorder_tasks(tasks: Vec<Task>) -> Vec<Task> {
     // Start traversal from root tasks (parent_id == None)
     if let Some(root_ids) = parent_to_children.get(&None) {
         for &root_id in root_ids.iter() {
-            stack.push(root_id);
+            stack.push((root_id, 0));
         }
     }
 
-    while let Some(task_id) = stack.pop() {
+    let mut depths = Vec::new();
+    while let Some((task_id, depth)) = stack.pop() {
         reordered_task_ids.push(task_id);
+        depths.push(depth);
         if let Some(children) = parent_to_children.get(&Some(task_id)) {
             for &child_id in children.iter() {
-                stack.push(child_id);
+                stack.push((child_id, depth + 1));
             }
         }
     }
 
-    reordered_task_ids
+    let reordered_tasks = reordered_task_ids
         .into_iter()
         .map(|id| task_id_to_index.get(&id).map(|&i| tasks[i].clone()).unwrap())
-        .collect()
+        .collect();
+    (reordered_tasks, depths)
 }
 
 // region:    --- Tests
@@ -98,13 +101,12 @@ mod tests {
                 done: false,
                 project_id: 1,
                 parent_id,
-                depth: 0,
                 sub_task_ids: sqlx::types::Json(Vec::new()),
             })
             .collect::<Vec<_>>();
 
         // -- Exec
-        let reordered_tasks = reorder_tasks(original_tasks);
+        let (reordered_tasks, actual_depth) = reorder_tasks(original_tasks);
 
         // -- Check
         let expected = [
@@ -118,6 +120,7 @@ mod tests {
             (Some(2), 5),
             (Some(5), 6),
         ];
+        let expected_depth = [0, 1, 2, 3, 2, 3, 3, 2, 3];
         let mut visited_task_ids = HashSet::new();
         for (parent_id, task_id) in expected {
             assert!(visited_task_ids.insert(task_id));
@@ -130,6 +133,7 @@ mod tests {
             .map(|t| (t.parent_id, t.id))
             .collect::<Vec<_>>();
         assert_eq!(expected, actual.as_slice());
+        assert_eq!(expected_depth, actual_depth.as_slice());
         Ok(())
     }
 }

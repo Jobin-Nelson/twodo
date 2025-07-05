@@ -181,7 +181,10 @@ impl App {
         };
 
         let tasks = read_task(&self.db, task_list_arg).await?;
-        self.twodo.tasks = reorder_tasks(tasks);
+        let (reordered_tasks, task_depth) = reorder_tasks(tasks);
+
+        self.twodo.tasks = reordered_tasks;
+        self.view_data.task_depth = task_depth;
 
         Ok(Message::Noop)
     }
