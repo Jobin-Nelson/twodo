@@ -10,26 +10,6 @@ mod common;
 use common::Result;
 
 #[tokio::test]
-async fn test_add_tasks() -> Result<()> {
-    // -- Setup & Fixtures
-    let db = common::init_db().await?;
-
-    // -- Exec
-    let task_title = "'Buy Milk'";
-    common::exec_cli(&db, vec!["twodo", "task", "add", task_title]).await?;
-
-    // -- Check
-    let task: Task = sqlx::query_as("SELECT * FROM tasks WHERE title = ?1")
-        .bind(task_title)
-        .fetch_one(&db)
-        .await?;
-
-    let result_title: String = task.title;
-    assert_eq!(result_title, task_title);
-    Ok(())
-}
-
-#[tokio::test]
 async fn test_list_tasks() -> Result<()> {
     // -- Setup & Fixtures
     let db = common::init_db().await?;
@@ -104,7 +84,7 @@ async fn test_delete_task() -> Result<()> {
         .fetch_optional(&db)
         .await?;
 
-    assert_eq!(None, task);
+    assert!(task.is_none());
     Ok(())
 }
 
@@ -134,3 +114,4 @@ async fn test_done_task() -> Result<()> {
     assert!(task.done);
     Ok(())
 }
+

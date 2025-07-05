@@ -140,6 +140,7 @@ impl App {
             title,
             description,
             project_id,
+            parent_id: None,
         })))
     }
 
@@ -150,7 +151,7 @@ impl App {
             .selected()
             .and_then(|i| self.twodo.projects.get(i))
             .map(|p| p.id)
-            .ok_or(Error::MissingProjectId)? as i64;
+            .ok_or(Error::MissingProjectId)?;
 
         self.twodo.tasks = get_tasks_by_project(&self.db, project_id).await?;
 

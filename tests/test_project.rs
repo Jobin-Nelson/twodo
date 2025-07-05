@@ -135,6 +135,6 @@ async fn test_cascade_delete_project() -> Result<()> {
         .fetch_optional(&db)
         .await?;
 
-    assert_eq!(None, task);
+    assert!(task.is_none());
     Ok(())
 }

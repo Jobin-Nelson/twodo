@@ -26,13 +26,13 @@ pub enum TaskOp {
 /// List arguments for task
 #[derive(Debug, Default, PartialEq, Args)]
 pub struct TaskListArg {
-    /// Output format
+    /// list tasks in project
     #[arg(short, long)]
-    output: Option<bool>,
+    pub project_id: Option<i64>,
 
     /// Number of task to list
     #[arg(short)]
-    number: Option<usize>,
+    pub number: Option<usize>,
 }
 
 /// Add arguments for task
@@ -48,6 +48,10 @@ pub struct TaskAddArg {
     /// Project id for task
     #[arg(short, long, default_value_t = 1)]
     pub project_id: i64,
+
+    /// Parent task id for task
+    #[arg(long)]
+    pub parent_id: Option<i64>,
 }
 
 /// Edit arguments for task
