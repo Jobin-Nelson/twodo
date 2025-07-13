@@ -27,6 +27,8 @@ async fn get_projects(db: &sqlx::Pool<sqlx::Sqlite>) -> Result<Vec<Project>> {
         .map_err(Into::into)
 }
 
+// PERF: This is a naive implementation. It is not optimized for performance.
+// TODO: Optimize this
 pub fn reorder_tasks(tasks: Vec<Task>) -> (Vec<Task>, Vec<usize>) {
     let mut task_id_to_index: HashMap<i64, usize> = HashMap::new();
     let mut parent_to_children: HashMap<Option<i64>, Vec<i64>> = HashMap::new();

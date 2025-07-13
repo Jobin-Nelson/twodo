@@ -6,7 +6,7 @@ use crate::{
 };
 use sqlx::SqlitePool;
 
-pub async fn delegate_task_op(db: &SqlitePool, op: TaskOp) -> Result<Message> {
+pub(crate) async fn delegate_task_op(db: &SqlitePool, op: TaskOp) -> Result<Message> {
     match op {
         TaskOp::List(list_arg) => list_task(db, list_arg, &mut std::io::stdout()).await,
         TaskOp::Add(add_arg) => add_task(db, add_arg).await,
@@ -81,7 +81,7 @@ pub async fn read_task(db: &SqlitePool, list_arg: TaskListArg) -> Result<Vec<Tas
     query.fetch_all(db).await.map_err(Into::into)
 }
 
-pub async fn list_task<T: std::io::Write>(
+async fn list_task<T: std::io::Write>(
     db: &SqlitePool,
     _list_arg: TaskListArg,
     mut writer: T,
@@ -311,6 +311,165 @@ mod tests {
 
             assert_eq!(None, task);
         }
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_list_tasks() -> Result<()> {
+        // -- Setup & Fixtures
+        let db = init_db().await?;
+        let task_title = "Test list tasks";
+        let op = TaskOp::Add(TaskAddArg {
+            title: task_title.to_string(),
+            description: None,
+            project_id: 1,
+            parent_id: None,
+        });
+        delegate_task_op(&db, op).await?;
+
+        // -- Exec
+        let mut stdout = Vec::new();
+        let list_arg = TaskListArg {
+            project_id: Some(1),
+            number: None,
+        };
+        list_task(&db, list_arg, &mut stdout).await?;
+
+        // -- Check
+        assert!(stdout
+            .windows(task_title.len())
+            .any(move |sub_slice| sub_slice == task_title.as_bytes()));
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_edit_task() -> Result<()> {
+        // -- Setup & Fixtures
+        let db = init_db().await?;
+        let task_title = "Test edit tasks";
+        let op = TaskOp::Add(TaskAddArg {
+            title: task_title.to_string(),
+            description: None,
+            project_id: 1,
+            parent_id: None,
+        });
+        delegate_task_op(&db, op).await?;
+
+        // -- Exec
+        let edited_task_id = 1;
+        let edited_task_title = "'Read zero 2 production book in rust'";
+        let edit_arg = TaskOp::Edit(TaskEditArg {
+            id: edited_task_id,
+            title: Some(edited_task_title.to_string()),
+            description: None,
+        });
+        delegate_task_op(&db, edit_arg).await?;
+
+        // -- Check
+        let task: Task = sqlx::query_as("SELECT * FROM tasks WHERE title = ?1")
+            .bind(edited_task_title)
+            .fetch_one(&db)
+            .await?;
+
+        let result_title: String = task.title;
+        assert_eq!(result_title, edited_task_title);
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_delete_task() -> Result<()> {
+        // -- Setup & Fixtures
+        let db = init_db().await?;
+        let task_title = "Test delete tasks";
+        let op = TaskOp::Add(TaskAddArg {
+            title: task_title.to_string(),
+            description: None,
+            project_id: 1,
+            parent_id: None,
+        });
+        delegate_task_op(&db, op).await?;
+
+        // -- Exec
+        let task_id = 1;
+        let delete_arg = TaskOp::Delete(TaskDeleteArg { id: task_id });
+        delegate_task_op(&db, delete_arg).await?;
+
+        // -- Check
+        let task: Option<Task> = sqlx::query_as("SELECT * FROM tasks WHERE title = ?1")
+            .bind(task_title)
+            .fetch_optional(&db)
+            .await?;
+
+        assert!(task.is_none());
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_done_task() -> Result<()> {
+        // -- Setup & Fixtures
+        let db = init_db().await?;
+        let task_title = "Test done tasks";
+        let op = TaskOp::Add(TaskAddArg {
+            title: task_title.to_string(),
+            description: None,
+            project_id: 1,
+            parent_id: None,
+        });
+        delegate_task_op(&db, op).await?;
+
+        let task: Task = sqlx::query_as("SELECT * FROM tasks WHERE title = ?1")
+            .bind(task_title)
+            .fetch_one(&db)
+            .await?;
+        assert!(!task.done);
+
+        // -- Exec
+        let task_id = 1;
+        let done_arg = TaskOp::Done(TaskDoneArg { id: task_id });
+        delegate_task_op(&db, done_arg).await?;
+
+        // -- Check
+        let task: Task = sqlx::query_as("SELECT * FROM tasks WHERE title = ?1")
+            .bind(task_title)
+            .fetch_one(&db)
+            .await?;
+
+        assert!(task.done);
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_default_project() -> Result<()> {
+        // -- Setup & Fixtures
+        let db = init_db().await?;
+
+        // -- Exec
+        let task_title = "Test delete tasks";
+        let op = TaskOp::Add(TaskAddArg {
+            title: task_title.to_string(),
+            description: None,
+            project_id: 1,
+            parent_id: None,
+        });
+        delegate_task_op(&db, op).await?;
+
+        // -- Check
+        let task_id = 1;
+        let project: String = sqlx::query_scalar(
+            "
+            SELECT p.name
+            FROM tasks AS t
+            INNER JOIN projects as p
+                ON t.project_id = p.id
+            WHERE t.id = ?1
+            ",
+        )
+        .bind(task_id)
+        .fetch_one(&db)
+        .await?;
+        let expected_project = "INBOX";
+        assert_eq!(expected_project, project);
+
         Ok(())
     }
 }

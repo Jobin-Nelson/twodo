@@ -5,10 +5,9 @@ mod project;
 mod task;
 
 // -- Flatten
+pub(crate) use task::delegate_task_op;
+pub(crate) use task::read_task;
 pub use delegate::delegate;
 pub use item::delegate_item;
-pub use task::delegate_task_op;
-pub use task::read_task;
-pub use task::list_task; // for list task test
 
 // endregion: --- Modules

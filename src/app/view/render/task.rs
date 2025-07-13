@@ -4,7 +4,7 @@ use ratatui::{
     prelude::Buffer,
     style::{Style, Stylize},
     text::Line,
-    widgets::{block::Position, Block, Borders, List, ListItem, StatefulWidget},
+    widgets::{block::Position, Block, BorderType, Borders, List, ListItem, StatefulWidget},
 };
 
 impl App {
@@ -12,6 +12,7 @@ impl App {
         let task_block = Block::new()
             .title(Line::from(" Tasks ").centered().style(Style::new().bold()))
             .borders(Borders::ALL)
+            .border_type(BorderType::Rounded)
             .title_position(Position::Top);
 
         let rows = self

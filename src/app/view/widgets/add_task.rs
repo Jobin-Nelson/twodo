@@ -8,7 +8,7 @@ use ratatui::{
     prelude::{Buffer, Stylize},
     style::Style,
     text::Line,
-    widgets::{Block, Clear, Widget},
+    widgets::{Block, BorderType, Clear, Widget},
 };
 use tui_textarea::TextArea;
 
@@ -31,14 +31,21 @@ impl Default for AddTask {
         let mut title = TextArea::default();
         title.set_cursor_style(Style::default());
         title.set_cursor_line_style(Style::default());
-        title.set_block(Block::bordered().title_top(Line::from(" Title ").centered().bold()));
+        title.set_block(
+            Block::bordered()
+                .border_type(BorderType::Rounded)
+                .title_top(Line::from(" Title ").centered().bold()),
+        );
         focus_textarea(&mut title);
 
         let mut description = TextArea::default();
         description.set_cursor_style(Style::default());
         description.set_cursor_line_style(Style::default());
-        description
-            .set_block(Block::bordered().title_top(Line::from(" Description ").centered().bold()));
+        description.set_block(
+            Block::bordered()
+                .border_type(BorderType::Rounded)
+                .title_top(Line::from(" Description ").centered().bold()),
+        );
 
         Self { title, description }
     }

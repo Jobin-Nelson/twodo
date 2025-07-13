@@ -5,7 +5,7 @@ use ratatui::{
     style::{Style, Stylize},
     text::Line,
     widgets::{
-        block::Position, Block, Borders, List, ListItem, StatefulWidget,
+        block::Position, Block, BorderType, Borders, List, ListItem, StatefulWidget
     },
 };
 
@@ -18,6 +18,7 @@ impl App {
                     .style(Style::new().bold()),
             )
             .borders(Borders::ALL)
+            .border_type(BorderType::Rounded)
             .title_position(Position::Top);
 
         let items = self
