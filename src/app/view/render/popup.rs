@@ -8,6 +8,7 @@ impl App {
     pub(super) fn render_popup(&mut self, area: Rect, buf: &mut Buffer) {
         match self.mode.app_mode {
             AppMode::AddTask | AppMode::AddSubTask | AppMode::AddSiblingTask => self.render_add_task(area, buf),
+            AppMode::AddProject => self.render_add_project(area, buf),
             _ => {}
         }
     }
@@ -24,5 +25,10 @@ impl App {
             }
         }
         self.popover.add_task.render(area, buf);
+    }
+
+    pub(super) fn render_add_project(&mut self, area: Rect, buf: &mut Buffer) {
+        focus_textarea(&mut self.popover.add_project.name);
+        self.popover.add_project.render(area, buf);
     }
 }

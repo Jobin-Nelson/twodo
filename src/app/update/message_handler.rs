@@ -1,10 +1,10 @@
 use crate::{
     app::{
-        model::{AddTaskMode, App, AppMode},
+        model::{AddProjectMode, AddTaskMode, App, AppMode},
         update::message::Message,
     },
-    cli::{TaskAddArg, TaskDeleteArg, TaskDoneArg, TaskListArg, TaskOp},
-    controller::delegater::{delegate_task_op, read_task},
+    cli::{ProjectAddArg, ProjectOp, TaskAddArg, TaskDeleteArg, TaskDoneArg, TaskListArg, TaskOp},
+    controller::delegater::{delegate_project_op, delegate_task_op, read_project, read_task},
     Error, Result,
 };
 
@@ -48,6 +48,14 @@ impl App {
             Message::SelectFirstProject => self.select_first_project(),
             Message::SelectLastProject => self.select_last_project(),
             Message::FocusProject => return_noop(|| self.mode.app_mode = AppMode::FocusProject),
+            Message::AddProjectBegin => self.add_project_begin(),
+            Message::FocusAddProjectName => {
+                return_noop(|| self.mode.add_project_mode = AddProjectMode::AddName)
+            }
+            Message::AddProjectCommit => self.add_project_commit(),
+            Message::AddProjectAbort => return_noop(|| self.mode.app_mode = AppMode::FocusProject),
+            Message::ProjectOp(op) => delegate_project_op(&self.db, op).await,
+            Message::ReloadProject => self.reload_project().await,
         }
     }
 
@@ -77,6 +85,11 @@ impl App {
             return Ok(Message::ReloadTask);
         }
         Ok(Message::Noop)
+    }
+
+    fn add_project_begin(&mut self) -> Result<Message> {
+        self.mode.app_mode = AppMode::AddProject;
+        Ok(Message::FocusAddProjectName)
     }
 
     fn add_task_begin(&mut self, app_mode: AppMode) -> Result<Message> {
@@ -109,6 +122,17 @@ impl App {
             .ok_or(Error::MissingTaskId)?;
 
         Ok(Message::TaskOp(TaskOp::Delete(TaskDeleteArg { id })))
+    }
+
+    fn add_project_commit(&mut self) -> Result<Message> {
+        self.mode.app_mode = AppMode::FocusProject;
+        let name = self.popover.add_project.name.lines()[0].trim().to_string();
+        if name.is_empty() {
+            return Ok(Message::Noop);
+        }
+
+        self.popover.add_project.clear();
+        Ok(Message::ProjectOp(ProjectOp::Add(ProjectAddArg { name })))
     }
 
     fn add_task_commit(&mut self) -> Result<Message> {
@@ -186,6 +210,11 @@ impl App {
         self.twodo.tasks = reordered_tasks;
         self.view_data.task_depth = task_depth;
 
+        Ok(Message::Noop)
+    }
+
+    async fn reload_project(&mut self) -> Result<Message> {
+        self.twodo.projects = read_project(&self.db).await?;
         Ok(Message::Noop)
     }
 }

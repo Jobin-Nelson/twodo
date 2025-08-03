@@ -28,4 +28,10 @@ pub enum Message {
     SelectPrevProject,
     SelectFirstProject,
     SelectLastProject,
+    AddProjectBegin,
+    AddProjectCommit,
+    AddProjectAbort,
+    FocusAddProjectName,
+    ProjectOp(cli::ProjectOp),
+    ReloadProject,
 }

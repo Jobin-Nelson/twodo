@@ -8,18 +8,22 @@ use sqlx::SqlitePool;
 
 pub(crate) async fn delegate_project_op(db: &SqlitePool, op: ProjectOp) -> Result<Message> {
     match op {
-        ProjectOp::List => list_project(db, &mut std::io::stdout()).await,
+        ProjectOp::List => list_project(db, std::io::stdout()).await,
         ProjectOp::Add(add_arg) => add_project(db, add_arg).await,
         ProjectOp::Edit(project_edit_arg) => edit_project(db, project_edit_arg).await,
         ProjectOp::Delete(project_delete_arg) => delete_project(db, project_delete_arg).await,
     }
 }
 
-async fn list_project(db: &SqlitePool, mut writer: impl std::io::Write) -> Result<Message> {
-    let projects: Vec<Project> = sqlx::query_as("SELECT * FROM projects")
+pub async fn read_project(db: &SqlitePool) -> Result<Vec<Project>> {
+    sqlx::query_as("SELECT * FROM projects")
         .fetch_all(db)
-        .await?;
+        .await
+        .map_err(Into::into)
+}
 
+async fn list_project(db: &SqlitePool, mut writer: impl std::io::Write) -> Result<Message> {
+    let projects = read_project(db).await?;
     for project in projects {
         writeln!(writer, "{}. {}", project.id, project.name)?;
     }
@@ -36,7 +40,7 @@ async fn add_project(db: &SqlitePool, add_arg: ProjectAddArg) -> Result<Message>
     .execute(db)
     .await?;
 
-    Ok(Message::Noop)
+    Ok(Message::ReloadProject)
 }
 
 async fn edit_project(db: &SqlitePool, edit_arg: ProjectEditArg) -> Result<Message> {

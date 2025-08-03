@@ -20,17 +20,19 @@ pub struct App {
 pub struct Mode {
     pub app_mode: AppMode,
     pub add_task_mode: AddTaskMode,
+    pub add_project_mode: AddProjectMode,
 }
 
 #[derive(Debug, PartialEq, Default)]
 pub enum AppMode {
     #[default]
     FocusTask,
-    FocusProject,
     AddTask,
     AddSubTask,
     AddSiblingTask,
+    AddProject,
     Quit,
+    FocusProject,
 }
 
 #[derive(Debug, Default)]
@@ -46,14 +48,26 @@ pub enum AddTaskMode {
 }
 
 #[derive(Debug, Default)]
+pub enum AddProjectMode {
+    #[default]
+    AddName,
+}
+
+#[derive(Debug, Default)]
 pub struct Popover {
     pub add_task: AddTask,
+    pub add_project: AddProject,
 }
 
 #[derive(Debug)]
 pub struct AddTask {
     pub title: TextArea<'static>,
     pub description: TextArea<'static>,
+}
+
+#[derive(Debug)]
+pub struct AddProject {
+    pub name: TextArea<'static>,
 }
 
 #[derive(Debug)]
