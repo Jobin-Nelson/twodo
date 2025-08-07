@@ -58,7 +58,7 @@ async fn delete_project(db: &SqlitePool, edit_arg: ProjectDeleteArg) -> Result<M
         .execute(db)
         .await?;
 
-    Ok(Message::Noop)
+    Ok(Message::ReloadProject)
 }
 
 // region:    --- Tests

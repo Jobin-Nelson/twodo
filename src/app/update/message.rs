@@ -34,4 +34,5 @@ pub enum Message {
     FocusAddProjectName,
     ProjectOp(cli::ProjectOp),
     ReloadProject,
+    DeleteProject,
 }

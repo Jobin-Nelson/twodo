@@ -3,7 +3,10 @@ use crate::{
         model::{AddProjectMode, AddTaskMode, App, AppMode},
         update::message::Message,
     },
-    cli::{ProjectAddArg, ProjectOp, TaskAddArg, TaskDeleteArg, TaskDoneArg, TaskListArg, TaskOp},
+    cli::{
+        ProjectAddArg, ProjectDeleteArg, ProjectOp, TaskAddArg, TaskDeleteArg, TaskDoneArg,
+        TaskListArg, TaskOp,
+    },
     controller::delegater::{delegate_project_op, delegate_task_op, read_project, read_task},
     Error, Result,
 };
@@ -56,6 +59,7 @@ impl App {
             Message::AddProjectAbort => return_noop(|| self.mode.app_mode = AppMode::FocusProject),
             Message::ProjectOp(op) => delegate_project_op(&self.db, op).await,
             Message::ReloadProject => self.reload_project().await,
+            Message::DeleteProject => self.delete_project(),
         }
     }
 
@@ -120,6 +124,8 @@ impl App {
             .selected()
             .map(|i| self.twodo.tasks[i].id)
             .ok_or(Error::MissingTaskId)?;
+
+        self.state.task_state.select_previous();
 
         Ok(Message::TaskOp(TaskOp::Delete(TaskDeleteArg { id })))
     }
@@ -215,7 +221,22 @@ impl App {
 
     async fn reload_project(&mut self) -> Result<Message> {
         self.twodo.projects = read_project(&self.db).await?;
-        Ok(Message::Noop)
+        Ok(Message::ReloadTask)
+    }
+
+    fn delete_project(&mut self) -> Result<Message> {
+        let id = self
+            .state
+            .project_state
+            .selected()
+            .map(|i| self.twodo.projects[i].id)
+            .ok_or(Error::MissingProjectId)?;
+
+        self.state.project_state.select_previous();
+
+        Ok(Message::ProjectOp(ProjectOp::Delete(ProjectDeleteArg {
+            id,
+        })))
     }
 }
 

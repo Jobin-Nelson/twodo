@@ -53,7 +53,7 @@ impl App {
 
             _ => {
                 match self.mode.add_project_mode {
-                    AddProjectMode::AddName => self.popover.add_task.title.input(key),
+                    AddProjectMode::AddName => self.popover.add_project.name.input(key),
                 };
                 Message::Noop
             }
@@ -120,7 +120,9 @@ fn on_focus_project_key_event(key: KeyEvent) -> Message {
         (_, KeyCode::Tab) => Message::FocusTask,
 
         // Manage projects
-        (_, KeyCode::Char('i')) => Message::AddProjectBegin,
+        (_, KeyCode::Char('i')) | (_, KeyCode::Char('a')) => Message::AddProjectBegin,
+        (_, KeyCode::Char('x')) => Message::DeleteProject,
+        (_, KeyCode::Char('r')) => Message::ReloadProject,
 
         // Other key handlers
         _ => on_global_key_event(key),

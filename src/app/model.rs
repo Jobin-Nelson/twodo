@@ -30,9 +30,9 @@ pub enum AppMode {
     AddTask,
     AddSubTask,
     AddSiblingTask,
+    FocusProject,
     AddProject,
     Quit,
-    FocusProject,
 }
 
 #[derive(Debug, Default)]
