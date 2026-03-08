@@ -13,7 +13,6 @@ pub struct App {
     pub twodo: Twodo,
     pub popover: Popover,
     pub state: State,
-    pub view_data: ViewData,
 }
 
 #[derive(Debug, Default)]
@@ -33,11 +32,6 @@ pub enum AppMode {
     FocusProject,
     AddProject,
     Quit,
-}
-
-#[derive(Debug, Default)]
-pub struct ViewData {
-    pub task_depth: Vec<usize>,
 }
 
 #[derive(Debug, PartialEq, Default)]
@@ -72,7 +66,7 @@ pub struct AddProject {
 
 #[derive(Debug)]
 pub struct Twodo {
-    pub tasks: Vec<Task>,
+    pub tasks: Vec<TaskNode>,
     pub projects: Vec<Project>,
 }
 
@@ -80,4 +74,22 @@ pub struct Twodo {
 pub struct State {
     pub task_state: ListState,
     pub project_state: ListState,
+}
+
+#[derive(Debug)]
+struct TaskNode {
+    pub id: i64,
+    pub title: String,
+    pub description: Option<String>,
+    pub status: String,
+    pub project_id: i64,
+    pub parent_id: Option<i64>,
+    pub position: i64,
+    pub children: Vec<TaskNode>,
+}
+
+impl From<Task> for TaskNode {
+    fn from(task: Task) -> Self {
+
+    }
 }

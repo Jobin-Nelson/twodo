@@ -5,7 +5,7 @@ use ratatui::{
     style::{Style, Stylize},
     text::Line,
     widgets::{
-        block::Position, Block, BorderType, Borders, List, ListItem, StatefulWidget
+        TitlePosition, Block, BorderType, Borders, List, ListItem, StatefulWidget
     },
 };
 
@@ -19,7 +19,7 @@ impl App {
             )
             .borders(Borders::ALL)
             .border_type(BorderType::Rounded)
-            .title_position(Position::Top);
+            .title_position(TitlePosition::Top);
 
         let items = self
             .twodo

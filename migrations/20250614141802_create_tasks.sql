@@ -1,55 +1,147 @@
 -- Add migration script here
-PRAGMA foreign_keys = 1;
-PRAGMA recursive_triggers = 1;
+PRAGMA foreign_keys = ON;
 
+
+-- Tasks
 CREATE TABLE IF NOT EXISTS tasks (
-  id INTEGER PRIMARY KEY,
-  title TEXT NOT NULL,
-  description TEXT,
-  done INTEGER NOT NULL DEFAULT false,
+  id INTEGER PRIMARY KEY, AUTOINCREMENT,
   project_id INTEGER NOT NULL DEFAULT 1,
   parent_id INTEGER,
-  sub_task_ids TEXT NOT NULL DEFAULT '[]',
-  FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE
-) STRICT;
+  title TEXT NOT NULL,
+  description TEXT,
+  status TEXT NOT NULL,
+  position INTEGER NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE,
+  FOREIGN KEY(parent_id) REFERENCES tasks(id) ON DELETE CASCADE
+);
 
 
--- Trigger to update parent task when deleting a subtask
-CREATE TRIGGER IF NOT EXISTS tasks_after_delete_cleanup
-AFTER DELETE ON tasks
-FOR EACH ROW
-WHEN OLD.parent_id IS NOT NULL
-BEGIN
-  UPDATE tasks
-  SET sub_task_ids = json_remove(
-    sub_task_ids,
-    '$[' ||
-    (SELECT json_each.key
-     FROM json_each(sub_task_ids)
-     WHERE CAST(json_each.value AS INTEGER) = OLD.id
-     LIMIT 1)
-    || ']'
-  )
-  WHERE id = OLD.parent_id
-    AND EXISTS (
-      SELECT 1
-      FROM json_each(sub_task_ids)
-      WHERE CAST(value AS INTEGER) = OLD.id
-    );
-END;
+-- Indexes
+CREATE INDEX idx_tasks_project ON tasks(project_id);
+CREATE INDEX idx_tasks_parent ON tasks(parent_id);
+CREATE INDEX idx_tasks_sibling_order ON tasks(project_id, parent_id, position);
 
--- Trigger to cascade deletion of sub tasks
-CREATE TRIGGER IF NOT EXISTS tasks_before_delete_cascade
-BEFORE DELETE ON tasks
-FOR EACH ROW
-WHEN EXISTS (
-  SELECT 1
-  FROM json_each(OLD.sub_task_ids)
+
+-- Enforce: parent and child must share the same project
+CREATE TRIGGER IF NOT EXISTS prevent_cross_project_parent
+BEFORE INSERT ON tasks
+WHEN NEW.project_id IS NOT NULL
+AND NEW.project_id != (
+  SELECT project_id FROM tasks WHERE id = NEW.parent_id
 )
 BEGIN
-  DELETE FROM tasks
-  WHERE id IN (
-    SELECT CAST(value AS INTEGER)
-    FROM json_each(OLD.sub_task_ids)
-  );
+  SELECT RAISE(ABORT, 'Parent task belongs to a different project');
 END;
+
+
+-- Position normalization on INSERT
+CREATE TRIGGER IF NOT EXISTS normalize_position_insert
+BEFORE INSERT ON tasks
+BEGIN
+  UPDATE tasks
+  SET position = position + 1
+  WHERE project_id = NEW.project_id
+    AND IFNULL(parent_id, -1) = IFNULL(NEW.parent_id, -1)
+    AND position >= NEW.position;
+END;
+
+
+-- Reorder siblings when position changes
+CREATE TRIGGER IF NOT EXISTS reorder_position_update
+BEFORE UPDATE OF position ON tasks
+FOR EACH ROW
+WHEN OLD.project_id = NEW.project_id
+AND IFNULL(OLD.parent_id, -1) = IFNULL(NEW.parent_id, -1)
+BEGIN
+  -- moving down
+  UPDATE tasks
+  SET position = position - 1
+  WHERE project_id = OLD.project_id
+    AND IFNULL(OLD.parent_id, -1) = IFNULL(NEW.parent_id, -1)
+    AND position > OLD.position
+    AND position <= NEW.position;
+
+  -- moving up
+  UPDATE tasks
+  SET position = position + 1
+  WHERE project_id = OLD.project_id
+    AND IFNULL(OLD.parent_id, -1) = IFNULL(NEW.parent_id, -1)
+    AND position < OLD.position
+    AND position >= NEW.position;
+END;
+
+
+-- Reorder when parent changes
+CREATE TRIGGER IF NOT EXISTS reorder_on_parent_change
+BEFORE UPDATE OF parent_id on tasks
+FOR EACH ROW
+BEGIN
+  -- close gap in old parent
+  UPDATE tasks
+  SET position = position - 1
+  WHEN project_id = OLD.project_id
+    AND IFNULL(parent_id, -1) = IFNULL(OLD.parent_id, -1)
+    AND position > OLD.position;
+
+  -- open space in new parent
+  UPDATE tasks
+  SET position = position + 1
+  WHEN project_id = NEW.project_id
+    AND IFNULL(parent_id, -1) = IFNULL(NEW.parent_id, -1)
+    AND position >= NEW.position;
+END;
+
+
+-- Cascade project change to all descendants
+CREATE TRIGGER IF NOT EXISTS cascade_project_change
+AFTER UPDATE OF project_id ON tasks
+FOR EACH ROW
+WHEN OLD.project_id != NEW.project_id
+BEGIN
+  WITH RECURSIVE descendants AS (
+    SELECT id FROM tasks WHERE parent_id = NEW.id
+    UNION ALL
+    SELECT t.id
+    FROM tasks t
+    JOIN descendants d ON t.parent_i = d.id
+  )
+  UPDATE tasks
+  SET project_id = NEW.project_id
+  WHERE id IN (SELECT id FROM descendants);
+END;
+
+
+-- Cascade done status to all descendants
+CREATE TRIGGER IF NOT EXISTS cascade_task_done
+AFTER UPDATE OF status ON tasks
+FOR EACH ROW
+WHEN OLD.status != 'done' AND NEW.status = 'done'
+BEGIN
+  WITH RECURSIVE descendants AS (
+    SELECT id FROM tasks WHERE parent_id = NEW.id
+    UNION ALL
+    SELECT .id
+    FROM tasks t
+    JOIN descendants d ON t.parent_id = d.id
+  )
+  UPDATE tasks
+  SET status = 'done'
+  WHERE ID IN (SELECT id FROM descendants)
+    AND status != 'done';
+END;
+
+
+-- Prevent open tasks under done parent
+CREATE TRIGGER IF NOT EXISTS prevent_open_under_done
+BEFORE UPDATE OF status ON tasks
+FOR EACH ROW
+WHEN NEW.status != 'done'
+AND NEW.parent_id IS NOT NULL
+AND (SELECT status FROM tasks WHERE id = NEW.parent_id)
+BEGIN
+  SELECT RAISE(abort, 'Cannot reopen task under a compoleted parent');
+END;
+
+
