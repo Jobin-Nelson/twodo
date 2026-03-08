@@ -1,11 +1,8 @@
-use std::collections::HashMap;
-
 use crate::{
     app::model::Twodo,
     cli::TaskListArg,
     constants::PROJECT_INBOX_ID,
-    controller::delegater::{read_tasks, read_projects},
-    objects::{Project, TaskNode},
+    controller::delegater::{read_projects, read_tasks},
     Result,
 };
 

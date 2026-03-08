@@ -1,10 +1,10 @@
-use crate::app::model::App;
+use crate::{app::model::App, constants::{T_COMPLETED, T_OPEN}};
 use ratatui::{
     layout::Rect,
     prelude::Buffer,
     style::{Style, Stylize},
     text::Line,
-    widgets::{TitlePosition, Block, BorderType, Borders, List, ListItem, StatefulWidget},
+    widgets::{block::Position, Block, BorderType, Borders, List, ListItem, StatefulWidget},
 };
 
 impl App {
@@ -13,17 +13,19 @@ impl App {
             .title(Line::from(" Tasks ").centered().style(Style::new().bold()))
             .borders(Borders::ALL)
             .border_type(BorderType::Rounded)
-            .title_position(TitlePosition::Top);
+            .title_position(Position::Top);
 
         let rows = self
             .twodo
             .tasknodes
             .iter()
-            .zip(self.view_data.task_depth.iter())
-            .map(|(t, &d)| {
-                let done = if t.done { "󰄳 " } else { "󰄰 " };
-                let depth = "  ".repeat(d);
-                ListItem::new(format!("{} {} {}", depth, done, t.title))
+            .map(|t| {
+                let status = match t.status {
+                    crate::objects::TaskStatus::Open => T_OPEN,
+                    crate::objects::TaskStatus::Completed => T_COMPLETED,
+                };
+                let depth = "  ".repeat(t.level as usize);
+                ListItem::new(format!("{} {} {}", depth, status, t.title))
             })
             .collect::<Vec<_>>();
 

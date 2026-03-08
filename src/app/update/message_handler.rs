@@ -1,14 +1,11 @@
 use crate::{
-    app::{
+    Error, Result, app::{
         model::{AddProjectMode, AddTaskMode, App, AppMode},
         update::message::Message,
-    },
-    cli::{
+    }, cli::{
         ProjectAddArg, ProjectDeleteArg, ProjectOp, TaskAddArg, TaskDeleteArg, TaskDoneArg,
         TaskListArg, TaskOp,
-    },
-    controller::delegater::{delegate_project_op, delegate_task_op, read_projects, read_tasks},
-    Error, Result,
+    }, controller::delegater::{delegate_project_op, delegate_task_op, read_projects, read_tasks}, objects::TaskStatus
 };
 
 impl App {
@@ -106,10 +103,10 @@ impl App {
             .selected()
             .map(|i| &self.twodo.tasknodes[i])
             .ok_or(Error::MissingTaskId)?;
-        let task_op = if task.done {
-            TaskOp::UnDone(TaskDoneArg { id: task.id })
-        } else {
-            TaskOp::Done(TaskDoneArg { id: task.id })
+
+        let task_op = match task.status {
+            TaskStatus::Open => TaskOp::Done(TaskDoneArg { id: task.id }),
+            TaskStatus::Completed => TaskOp::UnDone(TaskDoneArg { id: task.id }),
         };
 
         Ok(Message::TaskOp(task_op))

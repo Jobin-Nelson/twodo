@@ -53,7 +53,7 @@ async fn add_task(db: &SqlitePool, add_arg: TaskAddArg) -> Result<Message> {
 }
 
 pub async fn read_tasks(db: &SqlitePool, list_arg: TaskListArg) -> Result<Vec<TaskNode>> {
-    let query = r#"
+    let query_prefix = r#"
 WITH RECURSIVE task_tree AS (
     SELECT
         id,
@@ -76,10 +76,10 @@ WITH RECURSIVE task_tree AS (
     JOIN task_tree tt ON t.parent_id = tt.id
 )
 SELECT *
-FROM task_tree
-ORDER BY level, position;
-    "#;
-    let mut query_str = "SELECT * FROM tasks".to_string();
+FROM task_tree "#;
+    let query_suffix = "ORDER BY level, position";
+
+    let mut query_str = query_prefix.to_string();
     let mut where_clauses = Vec::new();
     let mut args = Vec::new();
 
@@ -95,10 +95,13 @@ ORDER BY level, position;
         query_str.push_str(&where_str);
     }
 
+    query_str.push_str(query_suffix);
+
     if let Some(number) = list_arg.number {
         query_str.push_str(" LIMIT ?");
         args.push(number.to_string());
     }
+
 
     let mut query = sqlx::query_as::<_, TaskNode>(&query_str);
     for arg in args {

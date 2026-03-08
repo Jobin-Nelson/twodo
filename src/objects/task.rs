@@ -1,20 +1,21 @@
-use sqlx::prelude::FromRow;
+use sqlx::prelude::{FromRow, Type};
 
-#[derive(Debug, FromRow, Clone)]
-#[cfg_attr(test, derive(PartialEq))]
-pub struct Task {
-    pub id: i64,
-    pub project_id: i64,
-    pub parent_id: Option<i64>,
-    pub title: String,
-    pub description: Option<String>,
-    pub status: String,
-    pub position: i64,
-    pub created_at: chrono::NaiveDateTime,
-    pub updated_at: chrono::NaiveDateTime,
-}
+// #[derive(Debug, FromRow, Clone)]
+// #[cfg_attr(test, derive(PartialEq))]
+// pub struct Task {
+//     pub id: i64,
+//     pub project_id: i64,
+//     pub parent_id: Option<i64>,
+//     pub title: String,
+//     pub description: Option<String>,
+//     pub status: String,
+//     pub position: i64,
+//     pub created_at: chrono::NaiveDateTime,
+//     pub updated_at: chrono::NaiveDateTime,
+// }
+//
 
-#[derive(Debug, FromRow, Clone)]
+#[derive(Debug, Clone, FromRow)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct TaskNode {
     pub id: i64,
@@ -22,10 +23,17 @@ pub struct TaskNode {
     pub parent_id: Option<i64>,
     pub title: String,
     pub description: Option<String>,
-    pub status: String,
+    pub status: TaskStatus,
     pub position: i64,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
     pub level: i64,
+}
+
+#[derive(Debug, Clone, PartialEq, Type)]
+#[sqlx(type_name="TEXT", rename_all="lowercase")]
+pub enum TaskStatus {
+    Open,
+    Completed,
 }
 
