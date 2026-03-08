@@ -1,4 +1,4 @@
-use crate::objects::{Project, Task};
+use crate::objects::{Project, TaskNode};
 
 use crossterm::event::EventStream;
 use ratatui::widgets::ListState;
@@ -66,7 +66,7 @@ pub struct AddProject {
 
 #[derive(Debug)]
 pub struct Twodo {
-    pub tasks: Vec<TaskNode>,
+    pub tasknodes: Vec<TaskNode>,
     pub projects: Vec<Project>,
 }
 
@@ -76,20 +76,3 @@ pub struct State {
     pub project_state: ListState,
 }
 
-#[derive(Debug)]
-struct TaskNode {
-    pub id: i64,
-    pub title: String,
-    pub description: Option<String>,
-    pub status: String,
-    pub project_id: i64,
-    pub parent_id: Option<i64>,
-    pub position: i64,
-    pub children: Vec<TaskNode>,
-}
-
-impl From<Task> for TaskNode {
-    fn from(task: Task) -> Self {
-
-    }
-}

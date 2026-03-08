@@ -15,7 +15,7 @@ pub(crate) async fn delegate_project_op(db: &SqlitePool, op: ProjectOp) -> Resul
     }
 }
 
-pub async fn read_project(db: &SqlitePool) -> Result<Vec<Project>> {
+pub async fn read_projects(db: &SqlitePool) -> Result<Vec<Project>> {
     sqlx::query_as("SELECT * FROM projects")
         .fetch_all(db)
         .await
@@ -23,7 +23,7 @@ pub async fn read_project(db: &SqlitePool) -> Result<Vec<Project>> {
 }
 
 async fn list_project(db: &SqlitePool, mut writer: impl std::io::Write) -> Result<Message> {
-    let projects = read_project(db).await?;
+    let projects = read_projects(db).await?;
     for project in projects {
         writeln!(writer, "{}. {}", project.id, project.name)?;
     }

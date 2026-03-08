@@ -19,7 +19,7 @@ async fn test_app_new() -> common::Result<()> {
 
     // -- Check
     for task in tasks {
-        assert!(app.twodo.tasks.iter().any(|t| t.title == task));
+        assert!(app.twodo.tasknodes.iter().any(|t| t.title == task));
     }
 
     Ok(())

@@ -14,7 +14,7 @@ impl App {
     const FRAMES_PER_SECOND: f32 = 30.0;
 
     pub async fn new(db: SqlitePool) -> Result<Self> {
-        let (twodo, task_depth) = get_twodo(&db).await?;
+        let twodo = get_twodo(&db).await?;
         Ok(Self {
             db,
             mode: Default::default(),

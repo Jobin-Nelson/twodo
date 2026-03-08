@@ -7,11 +7,9 @@ use crate::{
         ProjectAddArg, ProjectDeleteArg, ProjectOp, TaskAddArg, TaskDeleteArg, TaskDoneArg,
         TaskListArg, TaskOp,
     },
-    controller::delegater::{delegate_project_op, delegate_task_op, read_project, read_task},
+    controller::delegater::{delegate_project_op, delegate_task_op, read_projects, read_tasks},
     Error, Result,
 };
-
-use super::support::reorder_tasks;
 
 impl App {
     fn quit(&mut self) -> Result<Message> {
@@ -106,7 +104,7 @@ impl App {
             .state
             .task_state
             .selected()
-            .map(|i| &self.twodo.tasks[i])
+            .map(|i| &self.twodo.tasknodes[i])
             .ok_or(Error::MissingTaskId)?;
         let task_op = if task.done {
             TaskOp::UnDone(TaskDoneArg { id: task.id })
@@ -122,7 +120,7 @@ impl App {
             .state
             .task_state
             .selected()
-            .map(|i| self.twodo.tasks[i].id)
+            .map(|i| self.twodo.tasknodes[i].id)
             .ok_or(Error::MissingTaskId)?;
 
         self.state.task_state.select_previous();
@@ -147,12 +145,12 @@ impl App {
                 .state
                 .task_state
                 .selected()
-                .map(|i| self.twodo.tasks[i].id),
+                .map(|i| self.twodo.tasknodes[i].id),
             AppMode::AddSiblingTask => self
                 .state
                 .task_state
                 .selected()
-                .and_then(|i| self.twodo.tasks[i].parent_id),
+                .and_then(|i| self.twodo.tasknodes[i].parent_id),
             _ => None,
         };
 
@@ -210,17 +208,13 @@ impl App {
             number: None,
         };
 
-        let tasks = read_task(&self.db, task_list_arg).await?;
-        let (reordered_tasks, task_depth) = reorder_tasks(tasks);
-
-        self.twodo.tasks = reordered_tasks;
-        self.view_data.task_depth = task_depth;
+        self.twodo.tasknodes  = read_tasks(&self.db, task_list_arg).await?;
 
         Ok(Message::Noop)
     }
 
     async fn reload_project(&mut self) -> Result<Message> {
-        self.twodo.projects = read_project(&self.db).await?;
+        self.twodo.projects = read_projects(&self.db).await?;
         Ok(Message::ReloadTask)
     }
 

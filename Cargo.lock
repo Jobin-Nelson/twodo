@@ -412,6 +412,7 @@ checksum = "829d955a0bb380ef178a640b91779e3987da38c9aea133b20614cfed8cdea9c6"
 dependencies = [
  "bitflags 2.10.0",
  "crossterm_winapi",
+ "futures-core",
  "mio",
  "parking_lot",
  "rustix 0.38.44",
@@ -430,7 +431,6 @@ dependencies = [
  "crossterm_winapi",
  "derive_more",
  "document-features",
- "futures-core",
  "mio",
  "parking_lot",
  "rustix 1.1.2",
@@ -1770,6 +1770,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "577c9b9f652b4c121fb25c6a391dd06406d3b092ba68827e6d2f09550edc54b3"
 dependencies = [
  "cfg-if",
+ "crossterm 0.28.1",
  "crossterm 0.29.0",
  "instability",
  "ratatui-core",
@@ -2638,7 +2639,7 @@ version = "0.1.0"
 dependencies = [
  "chrono",
  "clap",
- "crossterm 0.29.0",
+ "crossterm 0.28.1",
  "derive_more",
  "futures",
  "ratatui 0.30.0",

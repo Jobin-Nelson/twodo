@@ -1,7 +1,7 @@
 use crate::{
     app::Message,
     cli::{TaskAddArg, TaskDeleteArg, TaskDoneArg, TaskEditArg, TaskListArg, TaskOp},
-    objects::Task,
+    objects::TaskNode,
     Result,
 };
 use sqlx::SqlitePool;
@@ -52,7 +52,33 @@ async fn add_task(db: &SqlitePool, add_arg: TaskAddArg) -> Result<Message> {
     Ok(Message::ReloadTask)
 }
 
-pub async fn read_task(db: &SqlitePool, list_arg: TaskListArg) -> Result<Vec<Task>> {
+pub async fn read_tasks(db: &SqlitePool, list_arg: TaskListArg) -> Result<Vec<TaskNode>> {
+    let query = r#"
+WITH RECURSIVE task_tree AS (
+    SELECT
+        id,
+        title,
+        parent_id,
+        position,
+        0 AS level
+    FROM tasks
+    WHERE project_id = ? AND parent_id IS NULL
+
+    UNION ALL
+
+    SELECT
+        t.id,
+        t.title,
+        t.parent_id,
+        t.position,
+        tt.level + 1
+    FROM tasks t
+    JOIN task_tree tt ON t.parent_id = tt.id
+)
+SELECT *
+FROM task_tree
+ORDER BY level, position;
+    "#;
     let mut query_str = "SELECT * FROM tasks".to_string();
     let mut where_clauses = Vec::new();
     let mut args = Vec::new();
@@ -74,7 +100,7 @@ pub async fn read_task(db: &SqlitePool, list_arg: TaskListArg) -> Result<Vec<Tas
         args.push(number.to_string());
     }
 
-    let mut query = sqlx::query_as::<_, Task>(&query_str);
+    let mut query = sqlx::query_as::<_, TaskNode>(&query_str);
     for arg in args {
         query = query.bind(arg);
     }
@@ -86,7 +112,7 @@ async fn list_task<T: std::io::Write>(
     _list_arg: TaskListArg,
     mut writer: T,
 ) -> Result<Message> {
-    let tasks: Vec<Task> = read_task(db, _list_arg).await?;
+    let tasks: Vec<TaskNode> = read_tasks(db, _list_arg).await?;
 
     for task in tasks {
         writeln!(writer, "{}. {}", task.id, task.title)?;

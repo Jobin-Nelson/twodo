@@ -17,7 +17,7 @@ impl App {
 
         let rows = self
             .twodo
-            .tasks
+            .tasknodes
             .iter()
             .zip(self.view_data.task_depth.iter())
             .map(|(t, &d)| {

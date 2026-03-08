@@ -4,69 +4,22 @@ use crate::{
     app::model::Twodo,
     cli::TaskListArg,
     constants::PROJECT_INBOX_ID,
-    controller::delegater::read_task,
-    objects::{Project, Task},
+    controller::delegater::{read_tasks, read_projects},
+    objects::{Project, TaskNode},
     Result,
 };
 
-pub async fn get_twodo(db: &sqlx::Pool<sqlx::Sqlite>) -> Result<(Twodo, Vec<usize>)> {
+pub async fn get_twodo(db: &sqlx::Pool<sqlx::Sqlite>) -> Result<Twodo> {
     let task_list_arg = TaskListArg {
         project_id: Some(PROJECT_INBOX_ID),
         number: None,
     };
-    let unordered_tasks = read_task(db, task_list_arg).await?;
-    let (tasks, task_depth) = reorder_tasks(unordered_tasks);
-    let projects = get_projects(db).await?;
-    Ok((Twodo { tasks, projects }, task_depth))
-}
-
-async fn get_projects(db: &sqlx::Pool<sqlx::Sqlite>) -> Result<Vec<Project>> {
-    sqlx::query_as::<_, Project>("SELECT * FROM projects")
-        .fetch_all(db)
-        .await
-        .map_err(Into::into)
-}
-
-// PERF: This is a naive implementation. It is not optimized for performance.
-// TODO: Optimize this
-pub fn reorder_tasks(tasks: Vec<Task>) -> (Vec<Task>, Vec<usize>) {
-    let mut task_id_to_index: HashMap<i64, usize> = HashMap::new();
-    let mut parent_to_children: HashMap<Option<i64>, Vec<i64>> = HashMap::new();
-
-    for (index, task) in tasks.iter().enumerate() {
-        task_id_to_index.insert(task.id, index);
-        parent_to_children
-            .entry(task.parent_id)
-            .or_default()
-            .push(task.id);
-    }
-
-    let mut reordered_task_ids = Vec::new();
-    let mut stack = Vec::new();
-
-    // Start traversal from root tasks (parent_id == None)
-    if let Some(root_ids) = parent_to_children.get(&None) {
-        for &root_id in root_ids.iter() {
-            stack.push((root_id, 0));
-        }
-    }
-
-    let mut depths = Vec::new();
-    while let Some((task_id, depth)) = stack.pop() {
-        reordered_task_ids.push(task_id);
-        depths.push(depth);
-        if let Some(children) = parent_to_children.get(&Some(task_id)) {
-            for &child_id in children.iter() {
-                stack.push((child_id, depth + 1));
-            }
-        }
-    }
-
-    let reordered_tasks = reordered_task_ids
-        .into_iter()
-        .map(|id| task_id_to_index.get(&id).map(|&i| tasks[i].clone()).unwrap())
-        .collect();
-    (reordered_tasks, depths)
+    let tasknodes = read_tasks(db, task_list_arg).await?;
+    let projects = read_projects(db).await?;
+    Ok(Twodo {
+        tasknodes,
+        projects,
+    })
 }
 
 // region:    --- Tests
