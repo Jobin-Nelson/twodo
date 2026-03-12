@@ -4,7 +4,7 @@ PRAGMA foreign_keys = ON;
 
 -- Tasks
 CREATE TABLE IF NOT EXISTS tasks (
-  id INTEGER PRIMARY KEY, AUTOINCREMENT,
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
   project_id INTEGER NOT NULL DEFAULT 1,
   parent_id INTEGER,
   title TEXT NOT NULL,
@@ -19,9 +19,9 @@ CREATE TABLE IF NOT EXISTS tasks (
 
 
 -- Indexes
-CREATE INDEX idx_tasks_project ON tasks(project_id);
-CREATE INDEX idx_tasks_parent ON tasks(parent_id);
-CREATE INDEX idx_tasks_sibling_order ON tasks(project_id, parent_id, position);
+CREATE INDEX IF NOT EXISTS idx_tasks_project ON tasks(project_id);
+CREATE INDEX IF NOT EXISTS idx_tasks_parent ON tasks(parent_id);
+CREATE INDEX IF NOT EXISTS idx_tasks_sibling_order ON tasks(project_id, parent_id, position);
 
 
 -- Enforce: parent and child must share the same project
@@ -81,14 +81,14 @@ BEGIN
   -- close gap in old parent
   UPDATE tasks
   SET position = position - 1
-  WHEN project_id = OLD.project_id
+  WHERE project_id = OLD.project_id
     AND IFNULL(parent_id, -1) = IFNULL(OLD.parent_id, -1)
     AND position > OLD.position;
 
   -- open space in new parent
   UPDATE tasks
   SET position = position + 1
-  WHEN project_id = NEW.project_id
+  WHERE project_id = NEW.project_id
     AND IFNULL(parent_id, -1) = IFNULL(NEW.parent_id, -1)
     AND position >= NEW.position;
 END;
@@ -100,44 +100,48 @@ AFTER UPDATE OF project_id ON tasks
 FOR EACH ROW
 WHEN OLD.project_id != NEW.project_id
 BEGIN
-  WITH RECURSIVE descendants AS (
-    SELECT id FROM tasks WHERE parent_id = NEW.id
-    UNION ALL
-    SELECT t.id
-    FROM tasks t
-    JOIN descendants d ON t.parent_i = d.id
-  )
   UPDATE tasks
   SET project_id = NEW.project_id
-  WHERE id IN (SELECT id FROM descendants);
+  WHERE id IN (
+    WITH RECURSIVE descendants AS (
+      SELECT id FROM tasks WHERE parent_id = NEW.id
+      UNION ALL
+      SELECT t.id
+      FROM tasks t
+      JOIN descendants d ON t.parent_id = d.id
+    )
+    SELECT id FROM descendants
+  );
 END;
 
 
--- Cascade done status to all descendants
-CREATE TRIGGER IF NOT EXISTS cascade_task_done
+-- Cascade completed status to all descendants
+CREATE TRIGGER IF NOT EXISTS cascade_task_completed
 AFTER UPDATE OF status ON tasks
 FOR EACH ROW
-WHEN OLD.status != 'done' AND NEW.status = 'done'
+WHEN OLD.status != 'completed' AND NEW.status = 'completed'
 BEGIN
-  WITH RECURSIVE descendants AS (
-    SELECT id FROM tasks WHERE parent_id = NEW.id
-    UNION ALL
-    SELECT .id
-    FROM tasks t
-    JOIN descendants d ON t.parent_id = d.id
-  )
   UPDATE tasks
-  SET status = 'done'
-  WHERE ID IN (SELECT id FROM descendants)
-    AND status != 'done';
+  SET status = 'completed'
+  WHERE ID IN (
+    WITH RECURSIVE descendants AS (
+      SELECT id FROM tasks WHERE parent_id = NEW.id
+      UNION ALL
+      SELECT t.id
+      FROM tasks t
+      JOIN descendants d ON t.parent_id = d.id
+    )
+    SELECT id FROM descendants
+    )
+  AND status != 'completed';
 END;
 
 
--- Prevent open tasks under done parent
-CREATE TRIGGER IF NOT EXISTS prevent_open_under_done
+-- Prevent open tasks under completed parent
+CREATE TRIGGER IF NOT EXISTS prevent_open_under_completed
 BEFORE UPDATE OF status ON tasks
 FOR EACH ROW
-WHEN NEW.status != 'done'
+WHEN NEW.status != 'completed'
 AND NEW.parent_id IS NOT NULL
 AND (SELECT status FROM tasks WHERE id = NEW.parent_id)
 BEGIN

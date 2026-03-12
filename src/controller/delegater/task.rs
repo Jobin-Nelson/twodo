@@ -37,18 +37,6 @@ async fn add_task(db: &SqlitePool, add_arg: TaskAddArg) -> Result<Message> {
         .fetch_one(db)
         .await?;
 
-    if let Some(parent_id) = add_arg.parent_id {
-        sqlx::query(
-            "UPDATE tasks
-            SET sub_task_ids = json_insert(sub_task_ids,'$[#]',?1)
-            WHERE id = ?2",
-        )
-        .bind(task_id)
-        .bind(parent_id)
-        .execute(db)
-        .await?;
-    };
-
     Ok(Message::ReloadTask)
 }
 
@@ -102,7 +90,6 @@ FROM task_tree "#;
         args.push(number.to_string());
     }
 
-
     let mut query = sqlx::query_as::<_, TaskNode>(&query_str);
     for arg in args {
         query = query.bind(arg);
@@ -139,7 +126,23 @@ async fn edit_task(db: &SqlitePool, edit_arg: TaskEditArg) -> Result<Message> {
         args.push(description);
     }
 
+    if let Some(position) = edit_arg.position {
+        set_clauses.push("position = ?");
+        args.push(position.to_string());
+    }
+
+    if let Some(parent) = edit_arg.parent {
+        set_clauses.push("parent = ?");
+        args.push(parent.to_string());
+    }
+
+    if let Some(project) = edit_arg.project {
+        set_clauses.push("project = ?");
+        args.push(project.to_string());
+    }
+
     query_str.push_str(&set_clauses.join(", "));
+
     query_str.push_str(" WHERE id = ?");
     args.push(edit_arg.id.to_string());
 
@@ -192,6 +195,7 @@ mod tests {
     }
 
     use super::*;
+    use crate::objects::Task;
 
     #[tokio::test]
     async fn test_add_tasks() -> Result<()> {
@@ -260,49 +264,19 @@ mod tests {
 
         assert_eq!(sub_task.parent_id, Some(parent_task_id));
 
-        let parent_task: Task = sqlx::query_as("SELECT * FROM tasks WHERE title = ?1")
-            .bind(parent_task_title)
-            .fetch_one(&db)
-            .await?;
+        let actual_sub_task_titles: Vec<String> = sqlx::query_scalar(
+            r#"
+            SELECT child.title
+            FROM tasks child
+            JOIN tasks parent ON child.parent_id = parent.id
+            WHERE parent.title  ?
+            "#,
+        )
+        .bind(parent_task_title)
+        .fetch_all(&db)
+        .await?;
 
-        assert_eq!(parent_task.sub_task_ids.to_vec(), vec![sub_task_id]);
-        Ok(())
-    }
-
-    #[tokio::test]
-    async fn test_update_parent_on_delete_subtasks() -> Result<()> {
-        // -- Setup & Fixtures
-        let db = init_db().await?;
-        let parent_task_title = "parent task";
-        let parent_task_id = 1;
-        let op = TaskOp::Add(TaskAddArg {
-            title: parent_task_title.to_string(),
-            description: None,
-            project_id: 1,
-            parent_id: None,
-        });
-        delegate_task_op(&db, op).await?;
-        let subtask_title = "sub task";
-        let sub_task_id = 2;
-        let op = TaskOp::Add(TaskAddArg {
-            title: subtask_title.to_string(),
-            description: None,
-            project_id: 1,
-            parent_id: Some(parent_task_id),
-        });
-        delegate_task_op(&db, op).await?;
-
-        // -- Exec
-        let op = TaskOp::Delete(TaskDeleteArg { id: sub_task_id });
-        delegate_task_op(&db, op).await?;
-
-        // -- Check
-        let parent_task: Task = sqlx::query_as("SELECT * FROM tasks WHERE title = ?1")
-            .bind(parent_task_title)
-            .fetch_one(&db)
-            .await?;
-
-        assert_eq!(parent_task.sub_task_ids.to_vec(), Vec::<i64>::new());
+        assert_eq!(vec![subtask_title], actual_sub_task_titles);
         Ok(())
     }
 
@@ -391,6 +365,9 @@ mod tests {
             id: edited_task_id,
             title: Some(edited_task_title.to_string()),
             description: None,
+            position: None,
+            parent: None,
+            project: None,
         });
         delegate_task_op(&db, edit_arg).await?;
 
@@ -450,7 +427,7 @@ mod tests {
             .bind(task_title)
             .fetch_one(&db)
             .await?;
-        assert!(!task.done);
+        assert_eq!(task.status, "open".to_string());
 
         // -- Exec
         let task_id = 1;
@@ -463,7 +440,7 @@ mod tests {
             .fetch_one(&db)
             .await?;
 
-        assert!(task.done);
+        assert_eq!(task.status, "completed".to_string());
         Ok(())
     }
 
@@ -501,6 +478,109 @@ mod tests {
 
         Ok(())
     }
+
+    #[tokio::test]
+    async fn test_reorder_tasks() -> Result<()> {
+        // -- Setup & Fixtures
+        let db = init_db().await?;
+        let tasks_titles = ["task 1", "task 2", "task 3", "task 4"];
+        let taskops = tasks_titles.map(|t| {
+            TaskOp::Add(TaskAddArg {
+                title: t.to_string(),
+                description: None,
+                project_id: 1,
+                parent_id: None,
+            })
+        });
+        for op in taskops {
+            delegate_task_op(&db, op).await?;
+        }
+
+        // -- Exec
+        let taskedit_op = TaskOp::Edit(TaskEditArg {
+            id: 3,
+            title: None,
+            description: None,
+            position: Some(1),
+            parent: None,
+            project: None,
+        });
+        delegate_task_op(&db, taskedit_op).await?;
+
+        // -- Check
+        let expected_task_titles = ["task 3", "task 1", "task 2", "task 4"];
+        let actual_task_titles: Vec<String> = sqlx::query_scalar(
+            "
+            SELECT t.title
+            FROM tasks
+            ",
+        )
+        .fetch_all(&db)
+        .await?;
+
+        assert!(expected_task_titles.iter().eq(actual_task_titles.iter()));
+
+        Ok(())
+    }
+
+    // async fn test_reorder_tasks1() -> Result<()> {
+    //     // -- Setup & Fixtures
+    //     let parent_id_task_id = [
+    //         (None, 1),
+    //         (Some(1), 2),
+    //         (Some(2), 5),
+    //         (Some(3), 4),
+    //         (Some(7), 8),
+    //         (Some(5), 6),
+    //         (Some(2), 7),
+    //         (Some(2), 3),
+    //         (Some(7), 9),
+    //     ];
+    //
+    //     let original_tasks = parent_id_task_id
+    //         .into_iter()
+    //         .map(|(parent_id, id)| Task {
+    //             id,
+    //             title: "test reorder".to_string(),
+    //             description: None,
+    //             done: false,
+    //             project_id: 1,
+    //             parent_id,
+    //             sub_task_ids: sqlx::types::Json(Vec::new()),
+    //         })
+    //         .collect::<Vec<_>>();
+    //
+    //     // -- Exec
+    //     let (reordered_tasks, actual_depth) = reorder_tasks(original_tasks);
+    //
+    //     // -- Check
+    //     let expected = [
+    //         (None, 1),
+    //         (Some(1), 2),
+    //         (Some(2), 3),
+    //         (Some(3), 4),
+    //         (Some(2), 7),
+    //         (Some(7), 9),
+    //         (Some(7), 8),
+    //         (Some(2), 5),
+    //         (Some(5), 6),
+    //     ];
+    //     let expected_depth = [0, 1, 2, 3, 2, 3, 3, 2, 3];
+    //     let mut visited_task_ids = HashSet::new();
+    //     for (parent_id, task_id) in expected {
+    //         assert!(visited_task_ids.insert(task_id));
+    //         if let Some(parent_id) = parent_id {
+    //             assert!(visited_task_ids.contains(&parent_id));
+    //         }
+    //     }
+    //     let actual = reordered_tasks
+    //         .into_iter()
+    //         .map(|t| (t.parent_id, t.id))
+    //         .collect::<Vec<_>>();
+    //     assert_eq!(expected, actual.as_slice());
+    //     assert_eq!(expected_depth, actual_depth.as_slice());
+    //     Ok(())
+    // }
 }
 
 // endregion: --- Tests

@@ -67,6 +67,18 @@ pub struct TaskEditArg {
     /// Description of task
     #[arg(short, long)]
     pub description: Option<String>,
+
+    /// Position of task
+    #[arg(long)]
+    pub position: Option<i64>,
+
+    /// Parent of task
+    #[arg(long)]
+    pub parent: Option<i64>,
+
+    /// Project of task
+    #[arg(long)]
+    pub project: Option<i64>,
 }
 
 /// Delete arguments for task
