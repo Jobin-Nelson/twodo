@@ -1,6 +1,8 @@
 #![deny(missing_docs)]
 use clap::{Args, Subcommand};
 
+use crate::objects::{Task, TaskNode, TaskStatus};
+
 /// Task operations
 #[derive(Subcommand, Debug, PartialEq)]
 pub enum TaskOp {
@@ -36,7 +38,7 @@ pub struct TaskListArg {
 }
 
 /// Add arguments for task
-#[derive(Debug, PartialEq, Args)]
+#[derive(Debug, PartialEq, Default, Args)]
 pub struct TaskAddArg {
     /// Title of task
     pub title: String,
@@ -52,6 +54,10 @@ pub struct TaskAddArg {
     /// Parent task id for task
     #[arg(long)]
     pub parent_id: Option<i64>,
+
+    /// Status of the task
+    #[arg(short, long, value_enum, default_value_t)]
+    pub status: TaskStatus,
 }
 
 /// Edit arguments for task

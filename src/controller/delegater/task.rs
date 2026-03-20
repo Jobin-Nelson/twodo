@@ -29,7 +29,7 @@ async fn add_task(db: &SqlitePool, add_arg: TaskAddArg) -> Result<Message> {
         VALUES (?1, ?2, ?3, ?4)
         RETURNING id"
     };
-    let task_id: i64 = sqlx::query_scalar(query_str)
+    let _task_id: i64 = sqlx::query_scalar(query_str)
         .bind(add_arg.title)
         .bind(add_arg.description)
         .bind(add_arg.project_id)
@@ -207,6 +207,7 @@ mod tests {
             description: None,
             project_id: 1,
             parent_id: None,
+            ..Default::default()
         });
         delegate_task_op(&db, op).await?;
 
@@ -217,6 +218,7 @@ mod tests {
             description: None,
             project_id: 1,
             parent_id: None,
+            ..Default::default()
         });
         delegate_task_op(&db, op).await?;
 
@@ -241,6 +243,7 @@ mod tests {
             description: None,
             project_id: 1,
             parent_id: None,
+            ..Default::default()
         });
         delegate_task_op(&db, op).await?;
 
@@ -253,6 +256,7 @@ mod tests {
             description: None,
             project_id: 1,
             parent_id: Some(parent_task_id),
+            ..Default::default()
         });
         delegate_task_op(&db, op).await?;
 
@@ -297,6 +301,7 @@ mod tests {
                 description: None,
                 project_id: 1,
                 parent_id,
+                ..Default::default()
             });
             delegate_task_op(&db, op).await?;
         }
@@ -327,6 +332,7 @@ mod tests {
             description: None,
             project_id: 1,
             parent_id: None,
+            ..Default::default()
         });
         delegate_task_op(&db, op).await?;
 
@@ -355,6 +361,7 @@ mod tests {
             description: None,
             project_id: 1,
             parent_id: None,
+            ..Default::default()
         });
         delegate_task_op(&db, op).await?;
 
@@ -392,6 +399,7 @@ mod tests {
             description: None,
             project_id: 1,
             parent_id: None,
+            ..Default::default()
         });
         delegate_task_op(&db, op).await?;
 
@@ -420,6 +428,7 @@ mod tests {
             description: None,
             project_id: 1,
             parent_id: None,
+            ..Default::default()
         });
         delegate_task_op(&db, op).await?;
 
@@ -456,6 +465,7 @@ mod tests {
             description: None,
             project_id: 1,
             parent_id: None,
+            ..Default::default()
         });
         delegate_task_op(&db, op).await?;
 
@@ -490,6 +500,7 @@ mod tests {
                 description: None,
                 project_id: 1,
                 parent_id: None,
+                ..Default::default()
             })
         });
         for op in taskops {

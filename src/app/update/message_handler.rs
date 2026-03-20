@@ -185,6 +185,7 @@ impl App {
             description,
             project_id,
             parent_id,
+            ..Default::default()
         })))
     }
 

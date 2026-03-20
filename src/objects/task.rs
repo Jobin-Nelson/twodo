@@ -1,4 +1,5 @@
 use sqlx::prelude::{FromRow, Type};
+use clap::ValueEnum;
 
 #[derive(Debug, FromRow, Clone)]
 #[cfg_attr(test, derive(PartialEq))]
@@ -30,9 +31,10 @@ pub struct TaskNode {
     pub level: i64,
 }
 
-#[derive(Debug, Clone, PartialEq, Type)]
+#[derive(Debug, Clone, PartialEq, Default, Type, ValueEnum)]
 #[sqlx(type_name="TEXT", rename_all="lowercase")]
 pub enum TaskStatus {
+    #[default]
     Open,
     Completed,
 }
