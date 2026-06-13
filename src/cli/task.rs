@@ -1,7 +1,7 @@
 #![deny(missing_docs)]
 use clap::{Args, Subcommand};
 
-use crate::objects::{Task, TaskNode, TaskStatus};
+use crate::objects::TaskStatus;
 
 /// Task operations
 #[derive(Subcommand, Debug, PartialEq)]
@@ -58,6 +58,10 @@ pub struct TaskAddArg {
     /// Status of the task
     #[arg(short, long, value_enum, default_value_t)]
     pub status: TaskStatus,
+
+    /// Status of the task
+    #[arg(long)]
+    pub position: Option<i64>,
 }
 
 /// Edit arguments for task

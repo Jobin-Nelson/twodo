@@ -4,7 +4,7 @@ use crate::app::{
 };
 
 use futures::{FutureExt, StreamExt};
-use crossterm::event::{Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
+use ratatui::crossterm::event::{Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 use tokio::time::Interval;
 
 impl App {

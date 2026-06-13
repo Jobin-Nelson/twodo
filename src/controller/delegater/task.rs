@@ -19,19 +19,22 @@ pub(crate) async fn delegate_task_op(db: &SqlitePool, op: TaskOp) -> Result<Mess
 
 async fn add_task(db: &SqlitePool, add_arg: TaskAddArg) -> Result<Message> {
     let query_str = if add_arg.parent_id.is_some() {
-        "INSERT INTO tasks (title, description, project_id, parent_id)
-        SELECT ?1, ?2, project_id, id as parent_id
+        "INSERT INTO tasks (title, description, status, position, project_id, parent_id)
+        SELECT ?1, ?2, ?3, ?4, project_id, id as parent_id
         FROM tasks
-        WHERE id = ?4
+        WHERE id = ?5
         RETURNING id"
     } else {
-        "INSERT INTO tasks (title, description, project_id, parent_id)
-        VALUES (?1, ?2, ?3, ?4)
+        "INSERT INTO tasks (title, description, status, position, project_id, parent_id)
+        VALUES (?1, ?2, ?3, ?4, ?5, ?6)
         RETURNING id"
     };
     let _task_id: i64 = sqlx::query_scalar(query_str)
         .bind(add_arg.title)
         .bind(add_arg.description)
+        .bind(add_arg.status)
+        // TODO: add task to the last position by default
+        .bind(add_arg.position.unwrap_or(1))
         .bind(add_arg.project_id)
         .bind(add_arg.parent_id)
         .fetch_one(db)
@@ -250,7 +253,7 @@ mod tests {
         // -- Exec
         let parent_task_id = 1;
         let subtask_title = "sub task";
-        let sub_task_id = 2;
+        // let sub_task_id = 2;
         let op = TaskOp::Add(TaskAddArg {
             title: subtask_title.to_string(),
             description: None,
@@ -329,9 +332,7 @@ mod tests {
         let task_title = "Test list tasks";
         let op = TaskOp::Add(TaskAddArg {
             title: task_title.to_string(),
-            description: None,
             project_id: 1,
-            parent_id: None,
             ..Default::default()
         });
         delegate_task_op(&db, op).await?;

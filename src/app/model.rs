@@ -1,6 +1,6 @@
 use crate::objects::{Project, TaskNode};
 
-use crossterm::event::EventStream;
+use ratatui::crossterm::event::EventStream;
 use ratatui::widgets::ListState;
 use sqlx::SqlitePool;
 use tui_textarea::TextArea;
@@ -75,4 +75,3 @@ pub struct State {
     pub task_state: ListState,
     pub project_state: ListState,
 }
-
